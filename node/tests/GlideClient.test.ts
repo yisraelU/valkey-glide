@@ -235,31 +235,12 @@ describe("GlideClient", () => {
             decoder,
         );
         transaction.select(0);
-        const result = await client.exec(transaction, decoder);
+        const result = await client.exec(transaction, { decoder });
         expectedRes.push(["select(0)", "OK"]);
 
         validateTransactionResponse(result, expectedRes);
         client.close();
     });
-
-    it.each([ProtocolVersion.RESP2, ProtocolVersion.RESP3])(
-        `can get Bytes decoded transactions_%p`,
-        async (protocol) => {
-            client = await GlideClient.createClient(
-                getClientConfigurationOption(cluster.getAddresses(), protocol),
-            );
-            const transaction = new Transaction();
-            const expectedRes = await encodedTransactionTest(transaction);
-            transaction.select(0);
-            const result = await client.exec(transaction, {
-                decoder: Decoder.Bytes,
-            });
-            expectedRes.push(["select(0)", "OK"]);
-
-            validateTransactionResponse(result, expectedRes);
-            client.close();
-        },
-    );
 
     it.each([ProtocolVersion.RESP2, ProtocolVersion.RESP3])(
         `dump and restore transactions_%p`,
