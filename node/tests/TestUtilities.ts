@@ -654,7 +654,7 @@ export async function encodedTransactionTest(
  * @param valueResponse - Represents the encoded response of "value" to compare
  * @returns Array of tuples, where first element is a test name/description, second - expected return value.
  */
-export async function DumpAndRestureTest(
+export async function DumpAndRestoreTest(
     baseTransaction: Transaction,
     valueResponse: GlideString,
 ): Promise<[string, GlideReturnType][]> {
