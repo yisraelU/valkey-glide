@@ -692,6 +692,7 @@ function toStringReturn(str: string, decoder: Decoder): GlideString {
     if (decoder == Decoder.Bytes) {
         return Buffer.from(str);
     }
+
     return str;
 }
 
