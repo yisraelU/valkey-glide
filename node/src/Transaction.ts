@@ -2651,7 +2651,7 @@ export class BaseTransaction<T extends BaseTransaction<T>> {
      *     attributes of a consumer group for the stream at `key`.
      *     The response comes in format `GlideRecord<GlideString | number | null>[]`, see {@link GlideRecord}.
      */
-    public xinfoGroups(key: string): T {
+    public xinfoGroups(key: GlideString): T {
         return this.addAndReturn(createXInfoGroups(key));
     }
 
@@ -2893,7 +2893,7 @@ export class BaseTransaction<T extends BaseTransaction<T>> {
         group: GlideString,
         consumer: GlideString,
         minIdleTime: number,
-        ids: string[],
+        ids: GlideString[],
         options?: StreamClaimOptions,
     ): T {
         return this.addAndReturn(
