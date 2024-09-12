@@ -1252,7 +1252,7 @@ export class BaseTransaction<T extends BaseTransaction<T>> {
      * Command Response - the number of the removed elements.
      * If `key` does not exist, 0 is returned.
      */
-    public lrem(key: GlideString, count: number, element: string): T {
+    public lrem(key: GlideString, count: number, element: GlideString): T {
         return this.addAndReturn(createLRem(key, count, element));
     }
 
