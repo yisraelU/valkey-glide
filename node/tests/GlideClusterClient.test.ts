@@ -307,7 +307,7 @@ describe("GlideClusterClient", () => {
             const expectedRes = await transactionTest(
                 transaction,
                 cluster.getVersion(),
-                decoder,
+                Decoder.String,
             );
 
             if (!cluster.checkIfServerVersionLessThan("7.0.0")) {
