@@ -323,7 +323,7 @@ describe("GlideClusterClient", () => {
             const result = await client.exec(transaction, {
                 decoder: Decoder.String,
             });
-                validateTransactionResponse(result, expectedRes);
+            validateTransactionResponse(result, expectedRes);
         },
         TIMEOUT,
     );
