@@ -34,7 +34,7 @@ import {
     SlotKeyTypes,
     SortOrder,
 } from "..";
-import { ValkeyCluster } from "../../utils/TestUtils.js";
+import { ValkeyCluster } from "../../utils/TestUtils";
 import { runBaseTests } from "./SharedTests";
 import {
     checkClusterResponse,
@@ -323,7 +323,7 @@ describe("GlideClusterClient", () => {
             const result = await client.exec(transaction, {
                 decoder: Decoder.String,
             });
-            validateTransactionResponse(result, expectedRes);
+                validateTransactionResponse(result, expectedRes);
         },
         TIMEOUT,
     );
