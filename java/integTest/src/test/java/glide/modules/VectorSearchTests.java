@@ -2,6 +2,7 @@
 package glide.modules;
 
 import static glide.TestUtilities.assertDeepEquals;
+import static glide.TestUtilities.commonClientConfig;
 import static glide.TestUtilities.commonClusterClientConfig;
 import static glide.api.BaseClient.OK;
 import static glide.api.models.GlideString.gs;
@@ -14,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import glide.api.GlideClient;
 import glide.api.GlideClusterClient;
 import glide.api.commands.servermodules.FT;
 import glide.api.models.GlideString;
@@ -49,7 +51,8 @@ import org.junit.jupiter.api.Test;
 
 public class VectorSearchTests {
 
-    private static GlideClusterClient client;
+    private static GlideClient client;
+    //private static GlideClusterClient client;
 
     /** Waiting interval to let server process the data before querying */
     private static final int DATA_PROCESSING_TIMEOUT = 1000; // ms
@@ -58,9 +61,9 @@ public class VectorSearchTests {
     @SneakyThrows
     public static void init() {
         client =
-                GlideClusterClient.createClient(commonClusterClientConfig().requestTimeout(5000).build())
+                GlideClient.createClient(commonClientConfig().requestTimeout(5000).build())
                         .get();
-        client.flushall(FlushMode.SYNC, ALL_PRIMARIES).get();
+        client.flushall(FlushMode.SYNC).get();
     }
 
     @AfterAll
@@ -72,7 +75,7 @@ public class VectorSearchTests {
     @Test
     @SneakyThrows
     public void check_module_loaded() {
-        var info = client.info(new Section[] {Section.MODULES}, RANDOM).get().getSingleValue();
+        var info = client.info(new Section[] {Section.MODULES}).get();
         assertTrue(info.contains("# search_index_stats"));
     }
 
@@ -324,7 +327,7 @@ public class VectorSearchTests {
 
         // TODO use FT.LIST with it is done
         var before =
-                Set.of((Object[]) client.customCommand(new String[] {"FT._LIST"}).get().getSingleValue());
+                Set.of((Object[]) client.customCommand(new String[] {"FT._LIST"}).get());
 
         assertEquals(OK, FT.dropindex(client, index).get());
 
@@ -332,7 +335,7 @@ public class VectorSearchTests {
         var after =
                 new HashSet<>(
                         Set.of(
-                                (Object[]) client.customCommand(new String[] {"FT._LIST"}).get().getSingleValue()));
+                                (Object[]) client.customCommand(new String[] {"FT._LIST"}).get()));
 
         assertFalse(after.contains(index));
         after.add(index);
@@ -720,7 +723,7 @@ public class VectorSearchTests {
     @SneakyThrows
     public void ft_info() {
         // TODO use FT.LIST when it is done
-        var indices = (Object[]) client.customCommand(new String[] {"FT._LIST"}).get().getSingleValue();
+        var indices = (Object[]) client.customCommand(new String[] {"FT._LIST"}).get();
 
         // check that we can get a response for all indices (no crashes on value conversion or so)
         for (var idx : indices) {
