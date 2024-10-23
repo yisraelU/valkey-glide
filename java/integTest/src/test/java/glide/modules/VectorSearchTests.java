@@ -51,7 +51,7 @@ import org.junit.jupiter.api.Test;
 
 public class VectorSearchTests {
 
-    private static GlideClient client;
+    private static GlideClusterClient client;
     //private static GlideClusterClient client;
 
     /** Waiting interval to let server process the data before querying */
@@ -61,7 +61,7 @@ public class VectorSearchTests {
     @SneakyThrows
     public static void init() {
         client =
-                GlideClient.createClient(commonClientConfig().requestTimeout(5000).build())
+                GlideClusterClient.createClient(commonClusterClientConfig().requestTimeout(5000).build())
                         .get();
         client.flushall(FlushMode.SYNC).get();
     }
@@ -75,7 +75,7 @@ public class VectorSearchTests {
     @Test
     @SneakyThrows
     public void check_module_loaded() {
-        var info = client.info(new Section[] {Section.MODULES}).get();
+        var info = client.info(new Section[] {Section.MODULES}).get().getSingleValue();
         assertTrue(info.contains("# search_index_stats"));
     }
 
@@ -327,7 +327,7 @@ public class VectorSearchTests {
 
         // TODO use FT.LIST with it is done
         var before =
-                Set.of((Object[]) client.customCommand(new String[] {"FT._LIST"}).get());
+                Set.of((Object[]) client.customCommand(new String[] {"FT._LIST"}).get().getSingleValue());
 
         assertEquals(OK, FT.dropindex(client, index).get());
 
@@ -335,7 +335,7 @@ public class VectorSearchTests {
         var after =
                 new HashSet<>(
                         Set.of(
-                                (Object[]) client.customCommand(new String[] {"FT._LIST"}).get()));
+                                (Object[]) client.customCommand(new String[] {"FT._LIST"}).get().getSingleValue()));
 
         assertFalse(after.contains(index));
         after.add(index);
@@ -723,7 +723,7 @@ public class VectorSearchTests {
     @SneakyThrows
     public void ft_info() {
         // TODO use FT.LIST when it is done
-        var indices = (Object[]) client.customCommand(new String[] {"FT._LIST"}).get();
+        var indices = (Object[]) client.customCommand(new String[] {"FT._LIST"}).get().getSingleValue();
 
         // check that we can get a response for all indices (no crashes on value conversion or so)
         for (var idx : indices) {
