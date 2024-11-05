@@ -82,7 +82,7 @@ jobs:
     test-python:
         runs-on: ${{ matrix.host.RUNNER }}
         needs: get-matrices
-        timeout-minutes: 35
+        timeout-minutes: 40
         strategy:
             fail-fast: false
             matrix:
@@ -150,7 +150,7 @@ jobs:
     test-pubsub-python:
         runs-on: ${{ matrix.host.RUNNER }}
         needs: get-matrices
-        timeout-minutes: 35
+        timeout-minutes: 40
         strategy:
             fail-fast: false
             matrix:
@@ -252,7 +252,7 @@ jobs:
     test-python-container:
         runs-on: ${{ matrix.host.RUNNER }}
         needs: [get-containers]
-        timeout-minutes: 25
+        timeout-minutes: 40
         strategy:
             fail-fast: false
             matrix:

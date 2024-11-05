@@ -130,7 +130,8 @@ public class SharedClientTests {
     }
 
     @SneakyThrows
-    @ParameterizedTest()
+    @ParameterizedTest
+    @Timeout(40)
     @MethodSource("inflightRequestsLimitSizeAndClusterMode")
     public void inflight_requests_limit(boolean clusterMode, int inflightRequestsLimit) {
         BaseClient testClient;
