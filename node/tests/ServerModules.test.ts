@@ -3129,10 +3129,7 @@ describe("Server Module Tests", () => {
                 client,
                 index,
                 query,
-                {
-                    decoder: Decoder.String,
-                    ...optionsWithLimit,
-                },
+                optionsWithLimit,
             );
             const expectedStringResult: FtSearchReturnType = [
                 1,
@@ -3152,13 +3149,10 @@ describe("Server Module Tests", () => {
                     },
                 ],
             ];
-            expect(stringResult).toEqual(stringResult);
+            expect(stringResult).toEqual(expectedStringResult);
 
             const stringProfileResult: FtProfileReturnType =
-                await GlideFt.profile(client, index, query, {
-                    decoder: Decoder.String,
-                    ...optionsWithLimit,
-                });
+                await GlideFt.profile(client, index, query, optionsWithLimit);
             expect(stringProfileResult[0]).toEqual(expectedStringResult);
         });
     });
