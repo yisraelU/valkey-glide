@@ -15,6 +15,7 @@ import {
     convertGlideRecordToRecord,
     Decoder,
     FtAggregateOptions,
+    FtAggregateReturnType,
     FtProfileReturnType,
     FtSearchOptions,
     FtSearchReturnType,
@@ -2663,14 +2664,7 @@ describe("Server Module Tests", () => {
                     query,
                     options,
                 );
-                expect(
-                    aggreg
-                        .map(convertGlideRecordToRecord)
-                        // elements (records in array) could be reordered
-                        .sort((a, b) =>
-                            a["condition"]! > b["condition"]! ? 1 : -1,
-                        ),
-                ).toEqual([
+                const expectedAggreg = [
                     {
                         condition: "new",
                         bicycles: isResp3 ? 5 : "5",
@@ -2683,15 +2677,28 @@ describe("Server Module Tests", () => {
                         condition: "used",
                         bicycles: isResp3 ? 4 : "4",
                     },
-                ]);
+                ];
+                expect(
+                    aggreg
+                        .map(convertGlideRecordToRecord)
+                        // elements (records in array) could be reordered
+                        .sort((a, b) =>
+                            a["condition"]! > b["condition"]! ? 1 : -1,
+                        ),
+                ).toEqual(expectedAggreg);
 
-                const aggregProfile = await GlideFt.profileAggregate(
+                const aggregProfile = (await GlideFt.profileAggregate(
                     client,
                     indexBicycles,
                     "*",
                     options,
-                );
-                expect(aggregProfile[0]).toEqual(aggreg);
+                ))[0] as FtAggregateReturnType;
+                expect(aggregProfile.map(convertGlideRecordToRecord)
+                    // elements (records in array) could be reordered
+                    .sort((a, b) =>
+                        a["condition"]! > b["condition"]! ? 1 : -1,
+                    ),
+                ).toEqual(expectedAggreg);
 
                 await GlideFt.dropindex(client, indexBicycles);
             },
