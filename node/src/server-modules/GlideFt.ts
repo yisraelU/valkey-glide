@@ -699,7 +699,7 @@ function _addFtAggregateOptions(options?: FtAggregateOptions): GlideString[] {
         args.push(
             "PARAMS",
             (options.params.length * 2).toString(),
-            ...options.params.flatMap((pair) => pair),
+            ...options.params.flatMap((param) => [param.key, param.value]),
         );
     }
 
@@ -792,8 +792,11 @@ function _addFtSearchOptions(options?: FtSearchOptions): GlideString[] {
 
     // PARAMS
     if (options.params) {
-        args.push("PARAMS", (options.params.length * 2).toString());
-        options.params.forEach((param) => args.push(param.key, param.value));
+        args.push(
+            "PARAMS",
+            (options.params.length * 2).toString(),
+            ...options.params.flatMap((param) => [param.key, param.value]),
+        );
     }
 
     // LIMIT

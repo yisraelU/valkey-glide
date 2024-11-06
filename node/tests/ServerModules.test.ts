@@ -2995,7 +2995,7 @@ describe("Server Module Tests", () => {
 
             // With the `COUNT` parameters - returns only the count
             const optionsWithCount: FtSearchOptions = {
-                params: [{ key: "query_vec", value: binaryValue1 }],
+                params: [["query_vec", binaryValue1]],
                 timeout: 10000,
                 count: true,
             };
@@ -3011,7 +3011,7 @@ describe("Server Module Tests", () => {
             expect(binaryResultCount).toEqual([2]);
 
             const options: FtSearchOptions = {
-                params: [{ key: "query_vec", value: binaryValue1 }],
+                params: [[ "query_vec", binaryValue1 ]],
                 timeout: 10000,
             };
             const binaryResult: FtSearchReturnType = await GlideFt.search(
