@@ -2685,7 +2685,7 @@ describe("Server Module Tests", () => {
                     },
                 ]);
 
-                const aggregProfile = await GlideFt.profile(
+                const aggregProfile = await GlideFt.profileAggregate(
                     client,
                     indexBicycles,
                     "*",
@@ -2849,7 +2849,7 @@ describe("Server Module Tests", () => {
                     },
                 ]);
 
-                const aggregProfile = await GlideFt.profile(
+                const aggregProfile = await GlideFt.profileAggregate(
                     client,
                     indexMovies,
                     query,
@@ -2995,7 +2995,7 @@ describe("Server Module Tests", () => {
 
             // With the `COUNT` parameters - returns only the count
             const optionsWithCount: FtSearchOptions = {
-                params: [["query_vec", binaryValue1]],
+                params: [{ key: "query_vec", value: binaryValue1 }],
                 timeout: 10000,
                 count: true,
             };
@@ -3011,7 +3011,7 @@ describe("Server Module Tests", () => {
             expect(binaryResultCount).toEqual([2]);
 
             const options: FtSearchOptions = {
-                params: [[ "query_vec", binaryValue1 ]],
+                params: [{ key: "query_vec", value: binaryValue1 }],
                 timeout: 10000,
             };
             const binaryResult: FtSearchReturnType = await GlideFt.search(
@@ -3058,11 +3058,11 @@ describe("Server Module Tests", () => {
             expect(binaryResult).toEqual(expectedBinaryResult);
 
             const binaryProfileResult: FtProfileReturnType =
-                await GlideFt.profile(client, index, query, {
+                await GlideFt.profileSearch(client, index, query, {
                     decoder: Decoder.Bytes,
                     ...options,
                 });
-            expect(binaryProfileResult[0]).toEqual(binaryResult);
+            expect(binaryProfileResult[0]).toEqual(expectedBinaryResult);
         });
 
         it("FT.SEARCH string on JSON", async () => {
@@ -3152,7 +3152,12 @@ describe("Server Module Tests", () => {
             expect(stringResult).toEqual(expectedStringResult);
 
             const stringProfileResult: FtProfileReturnType =
-                await GlideFt.profile(client, index, query, optionsWithLimit);
+                await GlideFt.profileSearch(
+                    client,
+                    index,
+                    query,
+                    optionsWithLimit,
+                );
 
             // TODO remove
             console.log(stringProfileResult);
