@@ -3,7 +3,6 @@
 import json
 import os
 from typing import List, Optional, Set
-import sys
 
 """
 This script should be used after all specific langauge folders were scanned by the analyzer of the OSS review tool (ORT).
@@ -125,10 +124,6 @@ skipped_list_file_path = f"{SCRIPT_PATH}/skipped_package_list.txt"
 with open(skipped_list_file_path, mode="wt", encoding="utf-8") as f:
     f.writelines(f"{package}\n" for package in skipped_packages)
 
-unapproved_list_file_path = f"{SCRIPT_PATH}/unapproved_package_list.txt"
-with open(unapproved_list_file_path, mode="wt", encoding="utf-8") as f:
-    f.writelines(f"{package}\n" for package in unknown_licenses)
-
 print("\n\n#### Found Licenses #####\n")
 all_licenses_set = set(sorted(all_licenses_set))
 for license in all_licenses_set:
@@ -137,7 +132,3 @@ for license in all_licenses_set:
 print("\n\n#### unknown / Not Pre-Approved Licenses #####\n")
 for package in unknown_licenses:
     print(str(package))
-
-# if unknown_licenses:
-#     print("Unknown or unapproved licenses detected!")
-#     sys.exit(1)
