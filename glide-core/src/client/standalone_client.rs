@@ -246,6 +246,9 @@ impl StandaloneClient {
                 );
                 return connection;
             }
+
+            let az = connection.node_az();
+            
         }
     }
 

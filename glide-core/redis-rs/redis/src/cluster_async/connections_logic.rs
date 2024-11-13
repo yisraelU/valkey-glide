@@ -396,7 +396,10 @@ where
         glide_connection_options,
     )
     .await
-    .map(|conn| conn.into())
+    .map(|conn| {
+        let az = conn.0.is_ilia();
+        (conn.0, conn.1, az).into()
+    })
 }
 
 /// The function returns None if the checked connection/s are healthy. Otherwise, it returns the type of the unhealthy connection/s.

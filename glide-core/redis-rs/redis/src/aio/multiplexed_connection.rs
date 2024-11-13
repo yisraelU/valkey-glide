@@ -413,6 +413,7 @@ pub struct MultiplexedConnection {
     response_timeout: Duration,
     protocol: ProtocolVersion,
     push_manager: PushManager,
+    az: Option<String>, // setup in setup_connection()
 }
 
 impl Debug for MultiplexedConnection {
@@ -483,6 +484,7 @@ impl MultiplexedConnection {
             response_timeout,
             push_manager: pm,
             protocol: redis_connection_info.protocol,
+            az: None,
         };
         let driver = {
             let auth = setup_connection(&connection_info.redis, &mut con);
@@ -575,6 +577,12 @@ impl MultiplexedConnection {
         self.push_manager = push_manager.clone();
         self.pipeline.set_push_manager(push_manager).await;
     }
+
+    /// For external visibilty (glide-core)
+    pub fn is_ilia(&self) -> Option<String> {
+        self.az.clone()
+    }
+
 }
 
 impl ConnectionLike for MultiplexedConnection {
@@ -597,6 +605,11 @@ impl ConnectionLike for MultiplexedConnection {
 
     fn is_closed(&self) -> bool {
         self.pipeline.is_closed()
+    }
+
+    /// Returns the state of the connection
+    fn is_ilia(&self) -> Option<String> {
+        self.is_ilia()
     }
 }
 impl MultiplexedConnection {

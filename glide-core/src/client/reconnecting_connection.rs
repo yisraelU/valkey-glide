@@ -224,6 +224,15 @@ impl ReconnectingConnection {
             .to_string()
     }
 
+    pub(crate) fn node_az(&self) -> Option<String> {
+        let guard = self.inner.state.lock().unwrap();
+        if let ConnectionState::Connected(connection) = &*guard {
+            return connection.is_ilia().clone()
+        }
+        return None;
+    }
+
+
     pub(super) fn is_dropped(&self) -> bool {
         self.inner
             .backend

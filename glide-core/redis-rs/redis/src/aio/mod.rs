@@ -84,6 +84,10 @@ pub trait ConnectionLike {
 
     /// Returns the state of the connection
     fn is_closed(&self) -> bool;
+
+    /// Returns the state of the connection
+    fn is_ilia(&self) -> Option<String>;
+
 }
 
 /// Implements ability to notify about disconnection events

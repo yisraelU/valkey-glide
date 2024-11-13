@@ -2534,6 +2534,11 @@ where
     fn is_closed(&self) -> bool {
         false
     }
+
+    fn is_ilia(&self) -> Option<String> {
+        None
+    }
+
 }
 
 /// Implements the process of connecting to a Redis server

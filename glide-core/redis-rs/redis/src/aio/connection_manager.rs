@@ -306,4 +306,9 @@ impl ConnectionLike for ConnectionManager {
         // always return false due to automatic reconnect
         false
     }
+
+    fn is_ilia(&self) -> Option<String> {
+        None
+    }
+
 }
