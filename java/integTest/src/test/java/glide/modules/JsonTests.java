@@ -1207,8 +1207,6 @@ public class JsonTests {
     @SneakyThrows 
     public void transaction_draft(){
         String key1 = UUID.randomUUID().toString();
-        String key2 = UUID.randomUUID().toString();
-
 
         // set the key first
         // JSON.SET
@@ -1253,30 +1251,32 @@ public class JsonTests {
         // JSON.OBJKEY
         assertArrayEquals(new Object[]{"a", "b"}, (Object[]) Json.objkeys(client, key1, "..").get());
 
+        // JSON.FORGET
+        assertEquals(1L, Json.forget(client, key1).get());
 
         // use of second key
         // new key for numincryby?
-        assertEquals("OK", Json.set(client, key2, "$", "{\"c\": [1, 2], \"d\": true, \"e\": [\"hello\", \"clouds\"], \"f\": {\"a\": \"hello\"}}").get());
+        assertEquals("OK", Json.set(client, key1, "$", "{\"c\": [1, 2], \"d\": true, \"e\": [\"hello\", \"clouds\"], \"f\": {\"a\": \"hello\"}}").get());
 
         // JSON.NUMINCRBY
-        assertEquals("[11,12]", Json.numincrby(client, key2, "$.c[*]", 10.0).get());
+        assertEquals("[11,12]", Json.numincrby(client, key1, "$.c[*]", 10.0).get());
 
         // JSON.NUMMULTBY
-        assertEquals("[110,120]", Json.nummultby(client, key2, "$.c[*]", 10.0).get());
+        assertEquals("[110,120]", Json.nummultby(client, key1, "$.c[*]", 10.0).get());
 
         // JSON.STRAPPEND
-        assertArrayEquals(new Object[]{8L}, (Object[]) Json.strappend(client, key2, "\"bar\"", "$..a").get());
+        assertArrayEquals(new Object[]{8L}, (Object[]) Json.strappend(client, key1, "\"bar\"", "$..a").get());
 
         // JSON.STRLEN
-        assertArrayEquals(new Object[]{8L}, (Object[]) Json.strlen(client, key2, "$..a").get());
+        assertArrayEquals(new Object[]{8L}, (Object[]) Json.strlen(client, key1, "$..a").get());
 
         // JSON.TYPE
-        assertArrayEquals(new Object[]{"string"}, (Object[]) Json.type(client, key2, "$..a").get());
+        assertArrayEquals(new Object[]{"string"}, (Object[]) Json.type(client, key1, "$..a").get());
 
         // JSON.MGET -> TODO
 
         // JSON.TOGGLE
-        assertEquals(false, Json.toggle(client, key2, "..d").get());
+        assertEquals(false, Json.toggle(client, key1, "..d").get());
 
         // JSON.RESP
         assertArrayEquals(
@@ -1288,12 +1288,10 @@ public class JsonTests {
                                 new Object[] {"e", new Object[] {"[", "hello", "clouds"}},
                                 new Object[] {"f", new Object[]{"{", new Object[]{"a", "hellobar"}}}
                         } 
-                }, (Object[])Json.resp(client, key2, "$").get());
+                }, (Object[])Json.resp(client, key1, "$").get());
 
         // JSON.DEL
-        assertEquals(1L, Json.del(client, key2, "$..a").get());
+        assertEquals(1L, Json.del(client, key1, "$..a").get());
 
-        // JSON.FORGET
-        assertEquals(1L, Json.forget(client, key2).get());
     }
 }
