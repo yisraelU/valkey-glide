@@ -1392,62 +1392,6 @@ public class JsonTests {
         MultiJson.forget(transaction, key4, "$");
         expectedResult.add(1L);
 
-        Object[] result = client.exec(transaction).get();
-
-        assertEquals("OK", result[0]);
-        assertEquals(null, result[1]);
-        assertEquals("{\"a\":\"one\",\"b\":[\"one\",\"two\"]}", result[2]);
-        assertEquals("{\"$.a\":[\"one\"],\"$.b\":[[\"one\",\"two\"]]}", result[3]);
-        assertEquals("{\"a\": \"one\",\"b\": [\"one\",\"two\"]}", result[4]);
-        assertEquals("{\"$.a\": [\"one\"],\"$.b\": [[\"one\",\"two\"]]}", result[5]);
-        assertArrayEquals(new Object[] {6L}, (Object[]) result[6]);
-        assertArrayEquals(new Object[] {0L}, (Object[]) result[7]);
-        assertArrayEquals(new Object[] {0L}, (Object[]) result[8]);
-        assertArrayEquals(new Object[] {7L}, (Object[]) result[9]);
-        assertArrayEquals(new Object[] {7L}, (Object[]) result[10]);
-        assertArrayEquals(new Object[] {"\"6\""}, (Object[]) result[11]);
-        assertArrayEquals(new Object[] {"\"5\""}, (Object[]) result[12]);
-        assertArrayEquals(new Object[] {2L}, (Object[]) result[13]);
-        assertEquals(2L, (Long) result[14]);
-        assertArrayEquals(new Object[] {null}, (Object[]) result[15]);
-        assertArrayEquals(new Object[] {"a", "b"}, (Object[]) result[16]);
-        assertArrayEquals(new Object[] {"a", "b"}, (Object[]) result[17]);
-        assertEquals(1L, result[18]);
-
-        assertEquals("OK", result[19]);
-        assertEquals(1L, result[20]);
-        assertEquals("OK", result[21]);
-        assertEquals("[11,12]", result[22]);
-        assertEquals("[110,120]", result[23]);
-        assertArrayEquals(new Object[] {8L}, (Object[]) result[24]);
-        assertArrayEquals(new Object[] {8L}, (Object[]) result[25]);
-        assertArrayEquals(new Object[] {"string"}, (Object[]) result[26]);
-        assertEquals(false, result[27]);
-        assertArrayEquals(new Object[] {"hellobar"}, (Object[]) result[28]);
-        assertEquals(1L, result[29]);
-        assertEquals(1L, result[30]);
-
-        assertEquals("OK", result[31]);
-        assertEquals(6L, result[32]);
-        assertEquals("\"tree2\"", result[33]);
-        assertEquals(5L, result[34]);
-        assertArrayEquals(new Object[] {5L}, (Object[]) result[35]);
-
-        assertEquals("OK", result[36]);
-        assertEquals(6L, result[37]);
-        assertEquals(6L, result[38]);
-        assertEquals("string", result[39]);
-        assertEquals("abcbar", result[40]);
-
-        assertEquals("OK", result[41]);
-        assertEquals(false, result[42]);
-        assertEquals(24L, result[43]);
-        assertArrayEquals(new Object[] {16L}, (Object[]) result[44]);
-        assertEquals(0L, result[45]);
-        assertEquals(1L, result[46]);
-        assertEquals(1L, result[47]);
-        assertEquals(1L, result[48]);
-
         Object[] results = client.exec(transaction).get();
         assertDeepEquals(expectedResult.toArray(), results);
     }
