@@ -30,6 +30,7 @@ public class MultiJson {
     private static final String JSON_PREFIX = "JSON.";
     private static final String JSON_SET = JSON_PREFIX + "SET";
     private static final String JSON_GET = JSON_PREFIX + "GET";
+    private static final String JSON_MGET = JSON_PREFIX + "MGET";
     private static final String JSON_NUMINCRBY = JSON_PREFIX + "NUMINCRBY";
     private static final String JSON_NUMMULTBY = JSON_PREFIX + "NUMMULTBY";
     private static final String JSON_ARRAPPEND = JSON_PREFIX + "ARRAPPEND";
@@ -219,6 +220,39 @@ public class MultiJson {
         checkTypeOrThrow(paths);
         transaction.customCommand(
                 newArgsBuilder().add(JSON_GET).add(key).add(options.toArgs()).add(paths).toArray());
+        return transaction;
+    }
+
+    /**
+     * Retrieves the JSON values at the specified <code>path</code> stored at multiple <code>keys
+     * </code>.
+     *
+     * @apiNote When in cluster mode, if keys in <code>keys</code> map to different hash slots, the
+     *     command will be split across these slots and executed separately for each. This means the
+     *     command is atomic only at the slot level. If one or more slot-specific requests fail, the
+     *     entire call will return the first encountered error, even though some requests may have
+     *     succeeded while others did not. If this behavior impacts your application logic, consider
+     *     splitting the request into sub-requests per slot to ensure atomicity.
+     * @param transaction The Valkey GLIDE client to execute the command in transaction.
+     * @param keys The keys of the JSON documents.
+     * @param path The path within the JSON documents.
+     * @return Command Response -An array with requested values for each key.
+     *     <ul>
+     *       <li>For JSONPath (path starts with <code>$</code>): Returns a stringified JSON list
+     *           replies for every possible path, or a string representation of an empty array, if
+     *           path doesn't exist.
+     *       <li>For legacy path (path doesn't start with <code>$</code>): Returns a string
+     *           representation of the value in <code>path</code>. If <code>path</code> doesn't exist,
+     *           the corresponding array element will be <code>null</code>.
+     *     </ul>
+     *     If a <code>key</code> doesn't exist, the corresponding array element will be <code>null
+     *     </code>.
+     */
+    public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> mget(
+            @NonNull BaseTransaction<T> transaction, @NonNull ArgType[] keys, @NonNull ArgType path) {
+        checkTypeOrThrow(keys);
+        checkTypeOrThrow(path);
+        transaction.customCommand(newArgsBuilder().add(JSON_MGET).add(keys).add(path).toArray());
         return transaction;
     }
 
