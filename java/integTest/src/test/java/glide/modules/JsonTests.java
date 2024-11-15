@@ -1209,16 +1209,11 @@ public class JsonTests {
         assertEquals("string", Json.type(client, key, "[*]").get());
     }
 
-    @SneakyThrows
+   @SneakyThrows
     @Test
     public void transaction_tests() {
         // TODO
-        // some problems: MultiJson.arrlen(transaction, key1)   , MultiJson.arrpop(transaction, key1)
-        // , cross slot error with debug memory , strappend but only key and value-> can't be a
-        // complicated array.
-        // strlen too for only key. "type" for only key.
-
-        // need to call forget and del another time lol (2 del and 2 forget total)
+        // do MGET
 
         ClusterTransaction transaction = new ClusterTransaction();
         ArrayList<Object> expectedResult = new ArrayList<>();
@@ -1226,6 +1221,8 @@ public class JsonTests {
         String key1 = "{key}-1" + UUID.randomUUID();
         String key2 = "{key}-2" + UUID.randomUUID();
         String key3 = "{key}-3" + UUID.randomUUID();
+        String key4 = "{key}-4" + UUID.randomUUID();
+
 
         // JSON.SET
         MultiJson.set(transaction, key1, "$", "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}");
@@ -1275,13 +1272,6 @@ public class JsonTests {
         // JSON.ARRLEN
         MultiJson.arrlen(transaction, key1, "$..b");
         expectedResult.add(new Object[] {7L});
-
-        // MultiJson.arrlen(transaction, key1);
-        // expectedResult.add(new Object[] {7L});
-
-        // JSON.ARRPOP
-        // MultiJson.arrpop(transaction, key1);
-        // expectedResult.add(new Object[] {6L});
 
         MultiJson.arrpop(transaction, key1, "$..b", 6L);
         expectedResult.add(new Object[] {"\"6\""});
@@ -1333,14 +1323,8 @@ public class JsonTests {
         MultiJson.strappend(transaction, key1, "\"bar\"", "$..a");
         expectedResult.add(new Object[] {8L});
 
-        // MultiJson.strappend(transaction, key1, "\"soup\"");
-        // expectedResult.add(new Object[]{90L});
-
         MultiJson.strlen(transaction, key1, "$..a");
         expectedResult.add(new Object[] {8L});
-
-        // MultiJson.strlen(transaction, key1);
-        // expectedResult.add(new Object[] {8L});
 
         MultiJson.type(transaction, key1, "$..a");
         expectedResult.add(new Object[] {"string"});
@@ -1367,17 +1351,53 @@ public class JsonTests {
         MultiJson.arrpop(transaction, key2);
         expectedResult.add("\"tree2\"");
 
+        MultiJson.debugFields(transaction, key2);
+        expectedResult.add(5L);
+
+        MultiJson.debugFields(transaction, key2, "$");
+        expectedResult.add(new Object[] {5L});
+
         // 3rd key lmfao
-        MultiJson.set(transaction, key3, "$", "abc");
+        MultiJson.set(transaction, key3, "$", "\"abc\"");
         expectedResult.add(OK);
 
         MultiJson.strappend(transaction, key3, "\"bar\"");
         expectedResult.add(6L);
 
-        // arrlen
-        // arrpop
-        // strappend
-        // strlen
+        MultiJson.strlen(transaction, key3);
+        expectedResult.add(6L);
+
+        MultiJson.type(transaction, key3);
+        expectedResult.add("string");
+
+        MultiJson.resp(transaction, key3);
+        expectedResult.add("abcbar");
+
+        // 4th key for toggle
+        MultiJson.set(transaction, key4, "$", "true");
+        expectedResult.add(OK);
+
+        MultiJson.toggle(transaction, key4);
+        expectedResult.add(false);
+
+        MultiJson.debugMemory(transaction, key4);
+        expectedResult.add(24L);
+
+        MultiJson.debugMemory(transaction, key4, "$");
+        expectedResult.add(new Object[]{16L});
+
+        MultiJson.clear(transaction, key2, "$.a");
+        expectedResult.add(0L);
+
+        MultiJson.clear(transaction, key2);
+        expectedResult.add(1L);
+
+        MultiJson.forget(transaction, key3);
+        expectedResult.add(1L);
+
+        MultiJson.forget(transaction, key4, "$");
+        expectedResult.add(1L);
+
 
         Object[] result = client.exec(transaction).get();
 
@@ -1392,7 +1412,6 @@ public class JsonTests {
         assertArrayEquals(new Object[] {0L}, (Object[]) result[8]);
         assertArrayEquals(new Object[] {7L}, (Object[]) result[9]);
         assertArrayEquals(new Object[] {7L}, (Object[]) result[10]);
-        // assertArrayEquals(new Object[] {5L}, (Object[]) result[11]);
         assertArrayEquals(new Object[] {"\"6\""}, (Object[]) result[11]);
         assertArrayEquals(new Object[] {"\"5\""}, (Object[]) result[12]);
         assertArrayEquals(new Object[] {2L}, (Object[]) result[13]);
@@ -1408,9 +1427,7 @@ public class JsonTests {
         assertEquals("[11,12]", result[22]);
         assertEquals("[110,120]", result[23]);
         assertArrayEquals(new Object[] {8L}, (Object[]) result[24]);
-        // assertArrayEquals(new Object[]{90L}, (Object[]) result[25]);
         assertArrayEquals(new Object[] {8L}, (Object[]) result[25]);
-        // assertArrayEquals(new Object[]{8L}, (Object[]) result[26]);
         assertArrayEquals(new Object[] {"string"}, (Object[]) result[26]);
         assertEquals(false, result[27]);
         assertArrayEquals(new Object[] {"hellobar"}, (Object[]) result[28]);
@@ -1420,11 +1437,27 @@ public class JsonTests {
         assertEquals("OK", result[31]);
         assertEquals(6L, result[32]);
         assertEquals("\"tree2\"", result[33]);
+        assertEquals(5L, result[34]);
+        assertArrayEquals(new Object[]{5L}, (Object[]) result[35]);
 
-        assertEquals("OK", result[34]);
-        assertEquals(6L, result[35]);
+
+        assertEquals("OK", result[36]);
+        assertEquals(6L, result[37]);
+        assertEquals(6L, result[38]);
+        assertEquals("string", result[39]);
+        assertEquals("abcbar", result[40]);
+
+        assertEquals("OK", result[41]);
+        assertEquals(false, result[42]);
+        assertEquals(24L, result[43]);
+        assertArrayEquals(new Object[]{16L}, (Object[]) result[44]);
+        assertEquals(0L, result[45]);
+        assertEquals(1L, result[46]);
+        assertEquals(1L, result[47]);
+        assertEquals(1L, result[48]);
+
 
         Object[] results = client.exec(transaction).get();
-        assertDeepEquals(expectedResult, results);
+        assertDeepEquals(expectedResult.toArray(), results);
     }
 }
