@@ -15,14 +15,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonParser;
-import glide.TransactionTestUtilities;
 import glide.api.commands.servermodules.MultiJson;
 import glide.api.GlideClusterClient;
 import glide.api.commands.servermodules.Json;
-<<<<<<< Updated upstream
-import glide.api.commands.servermodules.MultiJson;
-=======
->>>>>>> Stashed changes
+import glide.api.logging.Logger;
 import glide.api.models.ClusterTransaction;
 import glide.api.models.GlideString;
 import glide.api.models.commands.ConditionalChange;
@@ -49,6 +45,7 @@ public class JsonTests {
                 GlideClusterClient.createClient(commonClusterClientConfig().requestTimeout(5000).build())
                         .get();
         client.flushall(FlushMode.SYNC, ALL_PRIMARIES).get();
+        Logger.init(Logger.Level.DEBUG, "/home/ubuntu/acarbo/java/log/mylogger.log");
     }
 
     @AfterAll
