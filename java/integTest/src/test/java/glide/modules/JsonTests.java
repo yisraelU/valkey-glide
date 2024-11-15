@@ -1206,13 +1206,14 @@ public class JsonTests {
     }
 
     @Test
-    @SneakyThrows 
-    public void transaction_draft(){
+    @SneakyThrows
+    public void transaction_draft() {
         String key1 = UUID.randomUUID().toString();
 
         // set the key first
         // JSON.SET
-        assertEquals("OK", Json.set(client, key1, "$", "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}").get());
+        assertEquals(
+                "OK", Json.set(client, key1, "$", "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}").get());
 
         // JSON.CLEAR
         assertEquals(1, Json.clear(client, key1).get());
@@ -1221,44 +1222,61 @@ public class JsonTests {
         assertEquals("OK", Json.set(client, key1, "$", "{\"a\": 1, \"b\": [\"one\", \"two\"]}").get());
 
         // JSON.GET
-        assertEquals("{\"$.a\":[1],\"$.b\":[[\"one\",\"two\"]]}", Json.get(client, key1, new String[] {"$.a", "$.b"}).get());
+        assertEquals(
+                "{\"$.a\":[1],\"$.b\":[[\"one\",\"two\"]]}",
+                Json.get(client, key1, new String[] {"$.a", "$.b"}).get());
 
         // JSON.ARRAPPEND
-        assertArrayEquals(new Object[]{4L}, (Object[]) Json.arrappend(client, key1, "$.b", new String[]{"\"3\"", "\"4\""}).get());
+        assertArrayEquals(
+                new Object[] {4L},
+                (Object[]) Json.arrappend(client, key1, "$.b", new String[] {"\"3\"", "\"4\""}).get());
 
         // JSON.ARRINDEX
-        assertArrayEquals(new Object[]{0L}, (Object[]) Json.arrindex(client, key1, "$..b", "\"one\"").get());
+        assertArrayEquals(
+                new Object[] {0L}, (Object[]) Json.arrindex(client, key1, "$..b", "\"one\"").get());
 
         // JSON.ARRINSERT
-        assertArrayEquals(new Object[]{5L}, (Object[]) Json.arrinsert(client, key1, "$..b", 4, new String[]{"\"5\""}).get());
+        assertArrayEquals(
+                new Object[] {5L},
+                (Object[]) Json.arrinsert(client, key1, "$..b", 4, new String[] {"\"5\""}).get());
 
         // JSON.ARRLEN
-        assertArrayEquals(new Object[]{5L}, (Object[]) Json.arrlen(client, key1, "$..b").get());
+        assertArrayEquals(new Object[] {5L}, (Object[]) Json.arrlen(client, key1, "$..b").get());
 
         // JSON.ARRPOP
-        assertArrayEquals(new Object[]{"\"5\""}, (Object[]) Json.arrpop(client, key1, "$..b", 4L).get());
+        assertArrayEquals(
+                new Object[] {"\"5\""}, (Object[]) Json.arrpop(client, key1, "$..b", 4L).get());
 
         // JSON.ARRTRIM
-        assertArrayEquals(new Object[]{2L}, (Object[]) Json.arrtrim(client, key1, "$..b", 2, 3).get());
+        assertArrayEquals(new Object[] {2L}, (Object[]) Json.arrtrim(client, key1, "$..b", 2, 3).get());
 
         // JSON.DEBUG MEMORY
         assertEquals(98L, Json.debugMemory(client, key1, "..").get());
 
         // JSON.DEBUG FIELDS
-        assertArrayEquals(new Object[]{1L, 2L}, (Object[]) Json.debugFields(client, key1, "$[*]").get());
+        assertArrayEquals(
+                new Object[] {1L, 2L}, (Object[]) Json.debugFields(client, key1, "$[*]").get());
 
         // JSON.OBJLEN
         assertEquals(2L, (Long) Json.objlen(client, key1).get());
 
         // JSON.OBJKEY
-        assertArrayEquals(new Object[]{"a", "b"}, (Object[]) Json.objkeys(client, key1, "..").get());
+        assertArrayEquals(new Object[] {"a", "b"}, (Object[]) Json.objkeys(client, key1, "..").get());
 
         // JSON.FORGET
         assertEquals(1L, Json.forget(client, key1).get());
 
         // use of second key
         // new key for numincryby?
-        assertEquals("OK", Json.set(client, key1, "$", "{\"c\": [1, 2], \"d\": true, \"e\": [\"hello\", \"clouds\"], \"f\": {\"a\": \"hello\"}}").get());
+        assertEquals(
+                "OK",
+                Json.set(
+                                client,
+                                key1,
+                                "$",
+                                "{\"c\": [1, 2], \"d\": true, \"e\": [\"hello\", \"clouds\"], \"f\": {\"a\":"
+                                        + " \"hello\"}}")
+                        .get());
 
         // JSON.NUMINCRBY
         assertEquals("[11,12]", Json.numincrby(client, key1, "$.c[*]", 10.0).get());
@@ -1267,13 +1285,14 @@ public class JsonTests {
         assertEquals("[110,120]", Json.nummultby(client, key1, "$.c[*]", 10.0).get());
 
         // JSON.STRAPPEND
-        assertArrayEquals(new Object[]{8L}, (Object[]) Json.strappend(client, key1, "\"bar\"", "$..a").get());
+        assertArrayEquals(
+                new Object[] {8L}, (Object[]) Json.strappend(client, key1, "\"bar\"", "$..a").get());
 
         // JSON.STRLEN
-        assertArrayEquals(new Object[]{8L}, (Object[]) Json.strlen(client, key1, "$..a").get());
+        assertArrayEquals(new Object[] {8L}, (Object[]) Json.strlen(client, key1, "$..a").get());
 
         // JSON.TYPE
-        assertArrayEquals(new Object[]{"string"}, (Object[]) Json.type(client, key1, "$..a").get());
+        assertArrayEquals(new Object[] {"string"}, (Object[]) Json.type(client, key1, "$..a").get());
 
         // JSON.MGET -> TODO
 
@@ -1282,27 +1301,37 @@ public class JsonTests {
 
         // JSON.RESP
         assertArrayEquals(
-                new Object[] {  
-                        new Object[] {
-                                "{",
-                                new Object[] {"c", new Object[] {"[", 110L, 120L}},
-                                new Object[] {"d", "false"},
-                                new Object[] {"e", new Object[] {"[", "hello", "clouds"}},
-                                new Object[] {"f", new Object[]{"{", new Object[]{"a", "hellobar"}}}
-                        } 
-                }, (Object[])Json.resp(client, key1, "$").get());
+                new Object[] {
+                    new Object[] {
+                        "{",
+                        new Object[] {"c", new Object[] {"[", 110L, 120L}},
+                        new Object[] {"d", "false"},
+                        new Object[] {"e", new Object[] {"[", "hello", "clouds"}},
+                        new Object[] {"f", new Object[] {"{", new Object[] {"a", "hellobar"}}}
+                    }
+                },
+                (Object[]) Json.resp(client, key1, "$").get());
 
         // JSON.DEL
         assertEquals(1L, Json.del(client, key1, "$..a").get());
-
     }
 
     @SneakyThrows
     @Test
     public void transaction_tests() {
 
+        // some problems: MultiJson.arrlen(transaction, key1)   , MultiJson.arrpop(transaction, key1)
+        // , cross slot error with debug memory , strappend but only key and value-> can't be a
+        // complicated array.
+        // strlen too for only key. "type" for only key.
+
+        // need to call forget and del another time lol (2 del and 2 forget total)
+
         ClusterTransaction transaction = new ClusterTransaction();
-        String key1 = UUID.randomUUID().toString();
+        String key1 = "{key}-1" + UUID.randomUUID();
+        String key2 = "{key}-2" + UUID.randomUUID();
+        String key3 = "{key}-3" + UUID.randomUUID();
+
 
         MultiJson.set(transaction, key1, "$", "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}");
         MultiJson.set(
@@ -1319,13 +1348,63 @@ public class JsonTests {
                 key1,
                 new String[] {"$.a", "$.b"},
                 JsonGetOptions.builder().space(" ").build());
-        MultiJson.arrappend(transaction, key1, "$.b", new String[] {"\"3\"", "\"4\""});
+        MultiJson.arrappend(
+                transaction, key1, "$.b", new String[] {"\"3\"", "\"4\"", "\"5\"", "\"6\""});
         MultiJson.arrindex(transaction, key1, "$..b", "\"one\"");
         MultiJson.arrindex(transaction, key1, "$..b", "\"one\"", new JsonArrindexOptions(0L));
-        MultiJson.arrinsert(transaction, key1, "$..b", 4, new String[] {"\"5\""});
-        MultiJson.set(transaction, key1, "$", "[\"b\": [\"one\", \"two\"]]");
-        MultiJson.arrlen(transaction, key1);
-        // MultiJson.get(transaction, key1, new String[] { "$..b" });
+        MultiJson.arrinsert(transaction, key1, "$..b", 4, new String[] {"\"7\""});
+        MultiJson.arrlen(transaction, key1, "$..b");
+        // MultiJson.arrlen(transaction, key1);
+
+        // MultiJson.arrpop(transaction, key1);
+        MultiJson.arrpop(transaction, key1, "$..b", 6L);
+        MultiJson.arrpop(transaction, key1, "$..b");
+        MultiJson.arrtrim(transaction, key1, "$..b", 2, 3);
+        MultiJson.objlen(transaction, key1);
+        MultiJson.objlen(transaction, key1, "$..b");
+        MultiJson.objkeys(transaction, key1, "..");
+        MultiJson.objkeys(transaction, key1);
+        MultiJson.del(transaction, key1);
+
+        MultiJson.set(
+                transaction,
+                key1,
+                "$",
+                "{\"c\": [1, 2], \"d\": true, \"e\": [\"hello\", \"clouds\"], \"f\": {\"a\": \"hello\"}}");
+        MultiJson.del(transaction, key1, "$");
+        MultiJson.set(
+                transaction,
+                key1,
+                "$",
+                "{\"c\": [1, 2], \"d\": true, \"e\": [\"hello\", \"clouds\"], \"f\": {\"a\": \"hello\"}}");
+
+        MultiJson.numincrby(transaction, key1, "$.c[*]", 10.0);
+        MultiJson.nummultby(transaction, key1, "$.c[*]", 10.0);
+        MultiJson.strappend(transaction, key1, "\"bar\"", "$..a");
+        // MultiJson.strappend(transaction, key1, "\"soup\"");
+
+        MultiJson.strlen(transaction, key1, "$..a");
+        // MultiJson.strlen(transaction, key1);
+
+        MultiJson.type(transaction, key1, "$..a");
+
+        MultiJson.toggle(transaction, key1, "..d");
+        MultiJson.resp(transaction, key1, "$..a");
+        MultiJson.del(transaction, key1, "$..a");
+        // then delete the entire key
+        MultiJson.del(transaction, key1, "$");
+
+        MultiJson.set(transaction, key2, "$", "[1, 2, true, null, \"tree\", \"tree2\" ]");
+        MultiJson.arrlen(transaction, key2);
+        MultiJson.arrpop(transaction, key2);
+
+        // 3rd key lmfao
+        MultiJson.set(transaction, key3, "$", "abc");
+        MultiJson.strappend(transaction, key3, "\"bar\"");
+        // arrlen
+        // arrpop
+        // strappend
+        // strlen
 
         Object[] result = client.exec(transaction).get();
 
@@ -1335,13 +1414,43 @@ public class JsonTests {
         assertEquals("{\"$.a\":[\"one\"],\"$.b\":[[\"one\",\"two\"]]}", result[3]);
         assertEquals("{\"a\": \"one\",\"b\": [\"one\",\"two\"]}", result[4]);
         assertEquals("{\"$.a\": [\"one\"],\"$.b\": [[\"one\",\"two\"]]}", result[5]);
-        assertArrayEquals(new Object[] {4L}, (Object[]) result[6]);
+        assertArrayEquals(new Object[] {6L}, (Object[]) result[6]);
         assertArrayEquals(new Object[] {0L}, (Object[]) result[7]);
         assertArrayEquals(new Object[] {0L}, (Object[]) result[8]);
-        assertArrayEquals(new Object[] {5L}, (Object[]) result[9]);
-        assertArrayEquals(new Object[] {5L}, (Object[]) result[10]);
-        // assertEquals("[[\"one\",\"two\",\"3\",\"4\",\"5\"]]", result[11]);
+        assertArrayEquals(new Object[] {7L}, (Object[]) result[9]);
+        assertArrayEquals(new Object[] {7L}, (Object[]) result[10]);
+        // assertArrayEquals(new Object[] {5L}, (Object[]) result[11]);
+        assertArrayEquals(new Object[] {"\"6\""}, (Object[]) result[11]);
+        assertArrayEquals(new Object[] {"\"5\""}, (Object[]) result[12]);
+        assertArrayEquals(new Object[] {2L}, (Object[]) result[13]);
+        assertEquals(2L, (Long) result[14]);
+        assertArrayEquals(new Object[] {null}, (Object[]) result[15]);
+        assertArrayEquals(new Object[] {"a", "b"}, (Object[]) result[16]);
+        assertArrayEquals(new Object[] {"a", "b"}, (Object[]) result[17]);
+        assertEquals(1L, result[18]);
+
+        assertEquals("OK", result[19]);
+        assertEquals(1L, result[20]);
+        assertEquals("OK", result[21]);
+        assertEquals("[11,12]", result[22]);
+        assertEquals("[110,120]", result[23]);
+        assertArrayEquals(new Object[] {8L}, (Object[]) result[24]);
+        // assertArrayEquals(new Object[]{90L}, (Object[]) result[25]);
+        assertArrayEquals(new Object[] {8L}, (Object[]) result[25]);
+        // assertArrayEquals(new Object[]{8L}, (Object[]) result[26]);
+        assertArrayEquals(new Object[] {"string"}, (Object[]) result[26]);
+        assertEquals(false, result[27]);
+        assertArrayEquals(new Object[] {"hellobar"}, (Object[]) result[28]);
+        assertEquals(1L, result[29]);
+        assertEquals(1L, result[30]);
+
+        assertEquals("OK", result[31]);
+        assertEquals(6L, result[32]);
+        assertEquals("\"tree2\"", result[33]);
+
+        assertEquals("OK", result[34]);
+        assertEquals(6L, result[35]);
+
 
     }
-
 }
