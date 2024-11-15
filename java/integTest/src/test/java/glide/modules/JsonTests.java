@@ -16,6 +16,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.JsonParser;
 import glide.api.GlideClusterClient;
 import glide.api.commands.servermodules.Json;
+import glide.api.commands.servermodules.MultiJson;
+import glide.api.models.ClusterTransaction;
 import glide.api.models.GlideString;
 import glide.api.models.commands.ConditionalChange;
 import glide.api.models.commands.FlushMode;
@@ -1294,4 +1296,52 @@ public class JsonTests {
         assertEquals(1L, Json.del(client, key1, "$..a").get());
 
     }
+
+    @SneakyThrows
+    @Test
+    public void transaction_tests() {
+
+        ClusterTransaction transaction = new ClusterTransaction();
+        String key1 = UUID.randomUUID().toString();
+
+        MultiJson.set(transaction, key1, "$", "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}");
+        MultiJson.set(
+                transaction,
+                key1,
+                "$",
+                "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}",
+                ConditionalChange.ONLY_IF_DOES_NOT_EXIST);
+        MultiJson.get(transaction, key1);
+        MultiJson.get(transaction, key1, new String[] {"$.a", "$.b"});
+        MultiJson.get(transaction, key1, JsonGetOptions.builder().space(" ").build());
+        MultiJson.get(
+                transaction,
+                key1,
+                new String[] {"$.a", "$.b"},
+                JsonGetOptions.builder().space(" ").build());
+        MultiJson.arrappend(transaction, key1, "$.b", new String[] {"\"3\"", "\"4\""});
+        MultiJson.arrindex(transaction, key1, "$..b", "\"one\"");
+        MultiJson.arrindex(transaction, key1, "$..b", "\"one\"", new JsonArrindexOptions(0L));
+        MultiJson.arrinsert(transaction, key1, "$..b", 4, new String[] {"\"5\""});
+        MultiJson.set(transaction, key1, "$", "[\"b\": [\"one\", \"two\"]]");
+        MultiJson.arrlen(transaction, key1);
+        // MultiJson.get(transaction, key1, new String[] { "$..b" });
+
+        Object[] result = client.exec(transaction).get();
+
+        assertEquals("OK", result[0]);
+        assertEquals(null, result[1]);
+        assertEquals("{\"a\":\"one\",\"b\":[\"one\",\"two\"]}", result[2]);
+        assertEquals("{\"$.a\":[\"one\"],\"$.b\":[[\"one\",\"two\"]]}", result[3]);
+        assertEquals("{\"a\": \"one\",\"b\": [\"one\",\"two\"]}", result[4]);
+        assertEquals("{\"$.a\": [\"one\"],\"$.b\": [[\"one\",\"two\"]]}", result[5]);
+        assertArrayEquals(new Object[] {4L}, (Object[]) result[6]);
+        assertArrayEquals(new Object[] {0L}, (Object[]) result[7]);
+        assertArrayEquals(new Object[] {0L}, (Object[]) result[8]);
+        assertArrayEquals(new Object[] {5L}, (Object[]) result[9]);
+        assertArrayEquals(new Object[] {5L}, (Object[]) result[10]);
+        // assertEquals("[[\"one\",\"two\",\"3\",\"4\",\"5\"]]", result[11]);
+
+    }
+
 }
