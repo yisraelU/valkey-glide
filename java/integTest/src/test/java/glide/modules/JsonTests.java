@@ -15,9 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonParser;
-import glide.api.commands.servermodules.MultiJson;
 import glide.api.GlideClusterClient;
 import glide.api.commands.servermodules.Json;
+import glide.api.commands.servermodules.MultiJson;
 import glide.api.logging.Logger;
 import glide.api.models.ClusterTransaction;
 import glide.api.models.GlideString;
@@ -1209,7 +1209,7 @@ public class JsonTests {
         assertEquals("string", Json.type(client, key, "[*]").get());
     }
 
-   @SneakyThrows
+    @SneakyThrows
     @Test
     public void transaction_tests() {
         // TODO
@@ -1223,20 +1223,17 @@ public class JsonTests {
         String key3 = "{key}-3" + UUID.randomUUID();
         String key4 = "{key}-4" + UUID.randomUUID();
 
-
-        // JSON.SET
         MultiJson.set(transaction, key1, "$", "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}");
         expectedResult.add(OK);
 
         MultiJson.set(
-            transaction,
-            key1,
-            "$",
-            "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}",
-            ConditionalChange.ONLY_IF_DOES_NOT_EXIST);
+                transaction,
+                key1,
+                "$",
+                "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}",
+                ConditionalChange.ONLY_IF_DOES_NOT_EXIST);
         expectedResult.add(null);
 
-        // JSON.GET
         MultiJson.get(transaction, key1);
         expectedResult.add("{\"a\":\"one\",\"b\":[\"one\",\"two\"]}");
 
@@ -1247,29 +1244,25 @@ public class JsonTests {
         expectedResult.add("{\"a\": \"one\",\"b\": [\"one\",\"two\"]}");
 
         MultiJson.get(
-            transaction,
-            key1,
-            new String[] {"$.a", "$.b"},
-            JsonGetOptions.builder().space(" ").build());
+                transaction,
+                key1,
+                new String[] {"$.a", "$.b"},
+                JsonGetOptions.builder().space(" ").build());
         expectedResult.add("{\"$.a\": [\"one\"],\"$.b\": [[\"one\",\"two\"]]}");
 
-        // JSON.ARRAPPEND
         MultiJson.arrappend(
-            transaction, key1, "$.b", new String[] {"\"3\"", "\"4\"", "\"5\"", "\"6\""});
+                transaction, key1, "$.b", new String[] {"\"3\"", "\"4\"", "\"5\"", "\"6\""});
         expectedResult.add(new Object[] {6L});
 
-        // JSON.ARRINDEX
         MultiJson.arrindex(transaction, key1, "$..b", "\"one\"");
         expectedResult.add(new Object[] {0L});
 
         MultiJson.arrindex(transaction, key1, "$..b", "\"one\"", new JsonArrindexOptions(0L));
         expectedResult.add(new Object[] {0L});
 
-        // JSON.ARRINSERT
         MultiJson.arrinsert(transaction, key1, "$..b", 4, new String[] {"\"7\""});
         expectedResult.add(new Object[] {7L});
 
-        // JSON.ARRLEN
         MultiJson.arrlen(transaction, key1, "$..b");
         expectedResult.add(new Object[] {7L});
 
@@ -1298,20 +1291,20 @@ public class JsonTests {
         expectedResult.add(1L);
 
         MultiJson.set(
-            transaction,
-            key1,
-            "$",
-            "{\"c\": [1, 2], \"d\": true, \"e\": [\"hello\", \"clouds\"], \"f\": {\"a\": \"hello\"}}");
+                transaction,
+                key1,
+                "$",
+                "{\"c\": [1, 2], \"d\": true, \"e\": [\"hello\", \"clouds\"], \"f\": {\"a\": \"hello\"}}");
         expectedResult.add(OK);
 
         MultiJson.del(transaction, key1, "$");
         expectedResult.add(1L);
 
         MultiJson.set(
-            transaction,
-            key1,
-            "$",
-            "{\"c\": [1, 2], \"d\": true, \"e\": [\"hello\", \"clouds\"], \"f\": {\"a\": \"hello\"}}");
+                transaction,
+                key1,
+                "$",
+                "{\"c\": [1, 2], \"d\": true, \"e\": [\"hello\", \"clouds\"], \"f\": {\"a\": \"hello\"}}");
         expectedResult.add(OK);
 
         MultiJson.numincrby(transaction, key1, "$.c[*]", 10.0);
@@ -1342,6 +1335,7 @@ public class JsonTests {
         MultiJson.del(transaction, key1, "$");
         expectedResult.add(1L);
 
+        // 2nd key
         MultiJson.set(transaction, key2, "$", "[1, 2, true, null, \"tree\", \"tree2\" ]");
         expectedResult.add(OK);
 
@@ -1357,7 +1351,7 @@ public class JsonTests {
         MultiJson.debugFields(transaction, key2, "$");
         expectedResult.add(new Object[] {5L});
 
-        // 3rd key lmfao
+        // 3rd key
         MultiJson.set(transaction, key3, "$", "\"abc\"");
         expectedResult.add(OK);
 
@@ -1373,7 +1367,7 @@ public class JsonTests {
         MultiJson.resp(transaction, key3);
         expectedResult.add("abcbar");
 
-        // 4th key for toggle
+        // 4th key
         MultiJson.set(transaction, key4, "$", "true");
         expectedResult.add(OK);
 
@@ -1384,7 +1378,7 @@ public class JsonTests {
         expectedResult.add(24L);
 
         MultiJson.debugMemory(transaction, key4, "$");
-        expectedResult.add(new Object[]{16L});
+        expectedResult.add(new Object[] {16L});
 
         MultiJson.clear(transaction, key2, "$.a");
         expectedResult.add(0L);
@@ -1397,7 +1391,6 @@ public class JsonTests {
 
         MultiJson.forget(transaction, key4, "$");
         expectedResult.add(1L);
-
 
         Object[] result = client.exec(transaction).get();
 
@@ -1438,8 +1431,7 @@ public class JsonTests {
         assertEquals(6L, result[32]);
         assertEquals("\"tree2\"", result[33]);
         assertEquals(5L, result[34]);
-        assertArrayEquals(new Object[]{5L}, (Object[]) result[35]);
-
+        assertArrayEquals(new Object[] {5L}, (Object[]) result[35]);
 
         assertEquals("OK", result[36]);
         assertEquals(6L, result[37]);
@@ -1450,12 +1442,11 @@ public class JsonTests {
         assertEquals("OK", result[41]);
         assertEquals(false, result[42]);
         assertEquals(24L, result[43]);
-        assertArrayEquals(new Object[]{16L}, (Object[]) result[44]);
+        assertArrayEquals(new Object[] {16L}, (Object[]) result[44]);
         assertEquals(0L, result[45]);
         assertEquals(1L, result[46]);
         assertEquals(1L, result[47]);
         assertEquals(1L, result[48]);
-
 
         Object[] results = client.exec(transaction).get();
         assertDeepEquals(expectedResult.toArray(), results);
