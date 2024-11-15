@@ -1,6 +1,7 @@
 /** Copyright Valkey GLIDE Project Contributors - SPDX Identifier: Apache-2.0 */
 package glide.modules;
 
+import static glide.TestUtilities.assertDeepEquals;
 import static glide.TestUtilities.commonClusterClientConfig;
 import static glide.api.BaseClient.OK;
 import static glide.api.models.GlideString.gs;
@@ -14,9 +15,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonParser;
+import glide.TransactionTestUtilities;
+import glide.api.commands.servermodules.MultiJson;
 import glide.api.GlideClusterClient;
 import glide.api.commands.servermodules.Json;
+<<<<<<< Updated upstream
 import glide.api.commands.servermodules.MultiJson;
+=======
+>>>>>>> Stashed changes
 import glide.api.models.ClusterTransaction;
 import glide.api.models.GlideString;
 import glide.api.models.commands.ConditionalChange;
@@ -24,6 +30,7 @@ import glide.api.models.commands.FlushMode;
 import glide.api.models.commands.InfoOptions.Section;
 import glide.api.models.commands.json.JsonArrindexOptions;
 import glide.api.models.commands.json.JsonGetOptions;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import lombok.SneakyThrows;
@@ -1205,6 +1212,7 @@ public class JsonTests {
         assertEquals("string", Json.type(client, key, "[*]").get());
     }
 
+<<<<<<< Updated upstream
     @Test
     @SneakyThrows
     public void transaction_draft() {
@@ -1328,10 +1336,19 @@ public class JsonTests {
         // need to call forget and del another time lol (2 del and 2 forget total)
 
         ClusterTransaction transaction = new ClusterTransaction();
+=======
+    @SneakyThrows
+    @Test
+    public void transaction_tests() {
+        ClusterTransaction transaction = new ClusterTransaction();
+        ArrayList<Object> expectedResult = new ArrayList<>();
+
+>>>>>>> Stashed changes
         String key1 = "{key}-1" + UUID.randomUUID();
         String key2 = "{key}-2" + UUID.randomUUID();
         String key3 = "{key}-3" + UUID.randomUUID();
 
+<<<<<<< Updated upstream
 
         MultiJson.set(transaction, key1, "$", "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}");
         MultiJson.set(
@@ -1401,11 +1418,161 @@ public class JsonTests {
         // 3rd key lmfao
         MultiJson.set(transaction, key3, "$", "abc");
         MultiJson.strappend(transaction, key3, "\"bar\"");
+=======
+        // JSON.SET
+        MultiJson.set(transaction, key1, "$", "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}");
+        expectedResult.add(OK);
+
+        MultiJson.set(
+            transaction,
+            key1,
+            "$",
+            "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}",
+            ConditionalChange.ONLY_IF_DOES_NOT_EXIST);
+        expectedResult.add(null);
+
+        // JSON.GET
+        MultiJson.get(transaction, key1);
+        expectedResult.add("{\"a\":\"one\",\"b\":[\"one\",\"two\"]}");
+
+        MultiJson.get(transaction, key1, new String[] {"$.a", "$.b"});
+        expectedResult.add("{\"$.a\":[\"one\"],\"$.b\":[[\"one\",\"two\"]]}");
+
+        MultiJson.get(transaction, key1, JsonGetOptions.builder().space(" ").build());
+        expectedResult.add("{\"a\": \"one\",\"b\": [\"one\",\"two\"]}");
+
+        MultiJson.get(
+            transaction,
+            key1,
+            new String[] {"$.a", "$.b"},
+            JsonGetOptions.builder().space(" ").build());
+        expectedResult.add("{\"$.a\": [\"one\"],\"$.b\": [[\"one\",\"two\"]]}");
+
+        // JSON.ARRAPPEND
+        MultiJson.arrappend(
+            transaction, key1, "$.b", new String[] {"\"3\"", "\"4\"", "\"5\"", "\"6\""});
+        expectedResult.add(new Object[] {6L});
+
+        // JSON.ARRINDEX
+        MultiJson.arrindex(transaction, key1, "$..b", "\"one\"");
+        expectedResult.add(new Object[] {0L});
+
+        MultiJson.arrindex(transaction, key1, "$..b", "\"one\"", new JsonArrindexOptions(0L));
+        expectedResult.add(new Object[] {0L});
+
+        // JSON.ARRINSERT
+        MultiJson.arrinsert(transaction, key1, "$..b", 4, new String[] {"\"7\""});
+        expectedResult.add(new Object[] {7L});
+
+        // JSON.ARRLEN
+        MultiJson.arrlen(transaction, key1, "$..b");
+        expectedResult.add(new Object[] {7L});
+
+        // MultiJson.arrlen(transaction, key1);
+        // expectedResult.add(new Object[] {7L});
+
+        // JSON.ARRPOP
+        // MultiJson.arrpop(transaction, key1);
+        // expectedResult.add(new Object[] {6L});
+
+        MultiJson.arrpop(transaction, key1, "$..b", 6L);
+        expectedResult.add(new Object[] {"\"6\""});
+
+        MultiJson.arrpop(transaction, key1, "$..b");
+        expectedResult.add(new Object[] {"\"5\""});
+
+        MultiJson.arrtrim(transaction, key1, "$..b", 2, 3);
+        expectedResult.add(new Object[] {2L});
+
+        MultiJson.objlen(transaction, key1);
+        expectedResult.add(2L);
+
+        MultiJson.objlen(transaction, key1, "$..b");
+        expectedResult.add(new Object[] {null});
+
+        MultiJson.objkeys(transaction, key1, "..");
+        expectedResult.add(new Object[] {"a", "b"});
+
+        MultiJson.objkeys(transaction, key1);
+        expectedResult.add(new Object[] {"a", "b"});
+
+        MultiJson.del(transaction, key1);
+        expectedResult.add(1L);
+
+        MultiJson.set(
+            transaction,
+            key1,
+            "$",
+            "{\"c\": [1, 2], \"d\": true, \"e\": [\"hello\", \"clouds\"], \"f\": {\"a\": \"hello\"}}");
+        expectedResult.add(OK);
+
+        MultiJson.del(transaction, key1, "$");
+        expectedResult.add(1L);
+
+        MultiJson.set(
+            transaction,
+            key1,
+            "$",
+            "{\"c\": [1, 2], \"d\": true, \"e\": [\"hello\", \"clouds\"], \"f\": {\"a\": \"hello\"}}");
+        expectedResult.add(OK);
+
+        MultiJson.numincrby(transaction, key1, "$.c[*]", 10.0);
+        expectedResult.add("[11,12]");
+
+        MultiJson.nummultby(transaction, key1, "$.c[*]", 10.0);
+        expectedResult.add("[110,120]");
+
+        MultiJson.strappend(transaction, key1, "\"bar\"", "$..a");
+        expectedResult.add(new Object[] {8L});
+
+        // MultiJson.strappend(transaction, key1, "\"soup\"");
+        // expectedResult.add(new Object[]{90L});
+
+        MultiJson.strlen(transaction, key1, "$..a");
+        expectedResult.add(new Object[] {8L});
+
+        // MultiJson.strlen(transaction, key1);
+        // expectedResult.add(new Object[] {8L});
+
+        MultiJson.type(transaction, key1, "$..a");
+        expectedResult.add(new Object[] {"string"});
+
+        MultiJson.toggle(transaction, key1, "..d");
+        expectedResult.add(false);
+
+        MultiJson.resp(transaction, key1, "$..a");
+        expectedResult.add(new Object[] {"hellobar"});
+
+        MultiJson.del(transaction, key1, "$..a");
+        expectedResult.add(1L);
+
+        // then delete the entire key
+        MultiJson.del(transaction, key1, "$");
+        expectedResult.add(1L);
+
+        MultiJson.set(transaction, key2, "$", "[1, 2, true, null, \"tree\", \"tree2\" ]");
+        expectedResult.add(OK);
+
+        MultiJson.arrlen(transaction, key2);
+        expectedResult.add(6L);
+
+        MultiJson.arrpop(transaction, key2);
+        expectedResult.add("\"tree2\"");
+
+        // 3rd key lmfao
+        MultiJson.set(transaction, key3, "$", "abc");
+        expectedResult.add(OK);
+
+        MultiJson.strappend(transaction, key3, "\"bar\"");
+        expectedResult.add(6L);
+
+>>>>>>> Stashed changes
         // arrlen
         // arrpop
         // strappend
         // strlen
 
+<<<<<<< Updated upstream
         Object[] result = client.exec(transaction).get();
 
         assertEquals("OK", result[0]);
@@ -1452,5 +1619,9 @@ public class JsonTests {
         assertEquals(6L, result[35]);
 
 
+=======
+        Object[] results = client.exec(transaction).get();
+        assertDeepEquals(expectedResult, results);
+>>>>>>> Stashed changes
     }
 }
