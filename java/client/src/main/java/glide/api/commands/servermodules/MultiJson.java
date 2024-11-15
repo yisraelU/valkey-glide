@@ -75,9 +75,8 @@ public class MultiJson {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
         checkTypeOrThrow(value);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder().add(JSON_SET).add(key).add(path).add(value).toArray());
-        return transaction;
     }
 
     /**
@@ -103,7 +102,7 @@ public class MultiJson {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
         checkTypeOrThrow(value);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder()
                         .add(JSON_SET)
                         .add(key)
@@ -111,7 +110,6 @@ public class MultiJson {
                         .add(value)
                         .add(setCondition.getValkeyApi())
                         .toArray());
-        return transaction;
     }
 
     /**
@@ -125,8 +123,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> get(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_GET).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_GET).add(key).toArray());
     }
 
     /**
@@ -159,8 +156,7 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType[] paths) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(paths);
-        transaction.customCommand(newArgsBuilder().add(JSON_GET).add(key).add(paths).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_GET).add(key).add(paths).toArray());
     }
 
     /**
@@ -178,9 +174,8 @@ public class MultiJson {
             @NonNull ArgType key,
             @NonNull JsonGetOptions options) {
         checkTypeOrThrow(key);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder().add(JSON_GET).add(key).add(options.toArgs()).toArray());
-        return transaction;
     }
 
     /**
@@ -218,21 +213,16 @@ public class MultiJson {
             @NonNull JsonGetOptions options) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(paths);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder().add(JSON_GET).add(key).add(options.toArgs()).add(paths).toArray());
-        return transaction;
     }
 
     /**
      * Retrieves the JSON values at the specified <code>path</code> stored at multiple <code>keys
      * </code>.
      *
-     * @apiNote When in cluster mode, if keys in <code>keys</code> map to different hash slots, the
-     *     command will be split across these slots and executed separately for each. This means the
-     *     command is atomic only at the slot level. If one or more slot-specific requests fail, the
-     *     entire call will return the first encountered error, even though some requests may have
-     *     succeeded while others did not. If this behavior impacts your application logic, consider
-     *     splitting the request into sub-requests per slot to ensure atomicity.
+     * @apiNote When using ClusterTransaction, all keys in the transaction must be mapped to the same
+     *     slot.
      * @param transaction The Valkey GLIDE client to execute the command in transaction.
      * @param keys The keys of the JSON documents.
      * @param path The path within the JSON documents.
@@ -252,8 +242,7 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType[] keys, @NonNull ArgType path) {
         checkTypeOrThrow(keys);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_MGET).add(keys).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_MGET).add(keys).add(path).toArray());
     }
 
     /**
@@ -289,9 +278,8 @@ public class MultiJson {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
         checkTypeOrThrow(values);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder().add(JSON_ARRAPPEND).add(key).add(path).add(values).toArray());
-        return transaction;
     }
 
     /**
@@ -328,7 +316,7 @@ public class MultiJson {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
         checkTypeOrThrow(values);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder()
                         .add(JSON_ARRINSERT)
                         .add(key)
@@ -336,7 +324,6 @@ public class MultiJson {
                         .add(Integer.toString(index))
                         .add(values)
                         .toArray());
-        return transaction;
     }
 
     /**
@@ -366,9 +353,8 @@ public class MultiJson {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
         checkTypeOrThrow(scalar);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder().add(JSON_ARRINDEX).add(key).add(path).add(scalar).toArray());
-        return transaction;
     }
 
     /**
@@ -400,7 +386,7 @@ public class MultiJson {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
         checkTypeOrThrow(scalar);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder()
                         .add(JSON_ARRINDEX)
                         .add(key)
@@ -408,7 +394,6 @@ public class MultiJson {
                         .add(scalar)
                         .add(options.toArgs())
                         .toArray());
-        return transaction;
     }
 
     /**
@@ -436,8 +421,8 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_ARRLEN).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(
+                newArgsBuilder().add(JSON_ARRLEN).add(key).add(path).toArray());
     }
 
     /**
@@ -456,8 +441,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> arrlen(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_ARRLEN).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_ARRLEN).add(key).toArray());
     }
 
     /**
@@ -484,8 +468,8 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_DEBUG_MEMORY).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(
+                newArgsBuilder().add(JSON_DEBUG_MEMORY).add(key).add(path).toArray());
     }
 
     /**
@@ -508,8 +492,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> debugMemory(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_DEBUG_MEMORY).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_DEBUG_MEMORY).add(key).toArray());
     }
 
     /**
@@ -539,8 +522,8 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_DEBUG_FIELDS).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(
+                newArgsBuilder().add(JSON_DEBUG_FIELDS).add(key).add(path).toArray());
     }
 
     /**
@@ -560,8 +543,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> debugFields(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_DEBUG_FIELDS).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_DEBUG_FIELDS).add(key).toArray());
     }
 
     /**
@@ -579,8 +561,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> arrpop(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_ARRPOP).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_ARRPOP).add(key).toArray());
     }
 
     /**
@@ -608,8 +589,8 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_ARRPOP).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(
+                newArgsBuilder().add(JSON_ARRPOP).add(key).add(path).toArray());
     }
 
     /**
@@ -642,9 +623,8 @@ public class MultiJson {
             long index) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder().add(JSON_ARRPOP).add(key).add(path).add(Long.toString(index)).toArray());
-        return transaction;
     }
 
     /**
@@ -686,7 +666,7 @@ public class MultiJson {
             int end) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder()
                         .add(JSON_ARRTRIM)
                         .add(key)
@@ -694,7 +674,6 @@ public class MultiJson {
                         .add(Integer.toString(start))
                         .add(Integer.toString(end))
                         .toArray());
-        return transaction;
     }
 
     /**
@@ -731,9 +710,8 @@ public class MultiJson {
             Number number) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder().add(JSON_NUMINCRBY).add(key).add(path).add(number.toString()).toArray());
-        return transaction;
     }
 
     /**
@@ -769,9 +747,8 @@ public class MultiJson {
             Number number) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder().add(JSON_NUMMULTBY).add(key).add(path).add(number.toString()).toArray());
-        return transaction;
     }
 
     /**
@@ -790,8 +767,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> objlen(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_OBJLEN).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_OBJLEN).add(key).toArray());
     }
 
     /**
@@ -821,8 +797,8 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_OBJLEN).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(
+                newArgsBuilder().add(JSON_OBJLEN).add(key).add(path).toArray());
     }
 
     /**
@@ -841,8 +817,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> objkeys(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_OBJKEYS).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_OBJKEYS).add(key).toArray());
     }
 
     /**
@@ -872,8 +847,8 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_OBJKEYS).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(
+                newArgsBuilder().add(JSON_OBJKEYS).add(key).add(path).toArray());
     }
 
     /**
@@ -886,8 +861,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> del(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_DEL).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_DEL).add(key).toArray());
     }
 
     /**
@@ -904,8 +878,7 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_DEL).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_DEL).add(key).add(path).toArray());
     }
 
     /**
@@ -918,8 +891,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> forget(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_FORGET).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_FORGET).add(key).toArray());
     }
 
     /**
@@ -936,8 +908,8 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_FORGET).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(
+                newArgsBuilder().add(JSON_FORGET).add(key).add(path).toArray());
     }
 
     /**
@@ -952,8 +924,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> toggle(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_TOGGLE).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_TOGGLE).add(key).toArray());
     }
 
     /**
@@ -978,8 +949,8 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_TOGGLE).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(
+                newArgsBuilder().add(JSON_TOGGLE).add(key).add(path).toArray());
     }
 
     /**
@@ -1015,9 +986,8 @@ public class MultiJson {
         checkTypeOrThrow(key);
         checkTypeOrThrow(value);
         checkTypeOrThrow(path);
-        transaction.customCommand(
+        return transaction.customCommand(
                 newArgsBuilder().add(JSON_STRAPPEND).add(key).add(path).add(value).toArray());
-        return transaction;
     }
 
     /**
@@ -1037,8 +1007,8 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType value) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(value);
-        transaction.customCommand(newArgsBuilder().add(JSON_STRAPPEND).add(key).add(value).toArray());
-        return transaction;
+        return transaction.customCommand(
+                newArgsBuilder().add(JSON_STRAPPEND).add(key).add(value).toArray());
     }
 
     /**
@@ -1067,8 +1037,8 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_STRLEN).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(
+                newArgsBuilder().add(JSON_STRLEN).add(key).add(path).toArray());
     }
 
     /**
@@ -1084,8 +1054,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> strlen(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_STRLEN).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_STRLEN).add(key).toArray());
     }
 
     /**
@@ -1103,8 +1072,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> clear(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_CLEAR).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_CLEAR).add(key).toArray());
     }
 
     /**
@@ -1125,8 +1093,7 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_CLEAR).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_CLEAR).add(key).add(path).toArray());
     }
 
     /**
@@ -1153,8 +1120,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> resp(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_RESP).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_RESP).add(key).toArray());
     }
 
     /**
@@ -1193,8 +1159,7 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_RESP).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_RESP).add(key).add(path).toArray());
     }
 
     /**
@@ -1210,8 +1175,7 @@ public class MultiJson {
     public static <ArgType, T extends BaseTransaction<T>> BaseTransaction<T> type(
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key) {
         checkTypeOrThrow(key);
-        transaction.customCommand(newArgsBuilder().add(JSON_TYPE).add(key).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_TYPE).add(key).toArray());
     }
 
     /**
@@ -1236,7 +1200,6 @@ public class MultiJson {
             @NonNull BaseTransaction<T> transaction, @NonNull ArgType key, @NonNull ArgType path) {
         checkTypeOrThrow(key);
         checkTypeOrThrow(path);
-        transaction.customCommand(newArgsBuilder().add(JSON_TYPE).add(key).add(path).toArray());
-        return transaction;
+        return transaction.customCommand(newArgsBuilder().add(JSON_TYPE).add(key).add(path).toArray());
     }
 }
