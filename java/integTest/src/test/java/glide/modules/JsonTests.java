@@ -18,7 +18,6 @@ import com.google.gson.JsonParser;
 import glide.api.GlideClusterClient;
 import glide.api.commands.servermodules.Json;
 import glide.api.commands.servermodules.MultiJson;
-import glide.api.logging.Logger;
 import glide.api.models.ClusterTransaction;
 import glide.api.models.GlideString;
 import glide.api.models.commands.ConditionalChange;
@@ -45,7 +44,6 @@ public class JsonTests {
                 GlideClusterClient.createClient(commonClusterClientConfig().requestTimeout(5000).build())
                         .get();
         client.flushall(FlushMode.SYNC, ALL_PRIMARIES).get();
-        Logger.init(Logger.Level.DEBUG, "/home/ubuntu/acarbo/java/log/mylogger.log");
     }
 
     @AfterAll
@@ -1212,8 +1210,6 @@ public class JsonTests {
     @SneakyThrows
     @Test
     public void transaction_tests() {
-        // TODO
-        // do MGET
 
         ClusterTransaction transaction = new ClusterTransaction();
         ArrayList<Object> expectedResult = new ArrayList<>();
@@ -1222,6 +1218,8 @@ public class JsonTests {
         String key2 = "{key}-2" + UUID.randomUUID();
         String key3 = "{key}-3" + UUID.randomUUID();
         String key4 = "{key}-4" + UUID.randomUUID();
+        String key5 = "{key}-5" + UUID.randomUUID();
+        String key6 = "{key}-6" + UUID.randomUUID();
 
         MultiJson.set(transaction, key1, "$", "{\"a\": \"one\", \"b\": [\"one\", \"two\"]}");
         expectedResult.add(OK);
@@ -1391,6 +1389,16 @@ public class JsonTests {
 
         MultiJson.forget(transaction, key4, "$");
         expectedResult.add(1L);
+
+        // mget, key5 and key6
+        MultiJson.set(transaction, key5, "$", "{\"a\": 1, \"b\": [\"one\", \"two\"]}");
+        expectedResult.add(OK);
+
+        MultiJson.set(transaction, key6, "$", "{\"a\": 1, \"c\": false}");
+        expectedResult.add(OK);
+
+        MultiJson.mget(transaction, new String[] {key5, key6}, "$.c");
+        expectedResult.add(new String[] {"[]", "[false]"});
 
         Object[] results = client.exec(transaction).get();
         assertDeepEquals(expectedResult.toArray(), results);
