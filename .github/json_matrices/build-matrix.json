@@ -30,17 +30,6 @@
     {
         "OS": "ubuntu",
         "NAMED_OS": "linux",
-        "ARCH": "arm64",
-        "TARGET": "aarch64-unknown-linux-musl",
-        "RUNNER": ["self-hosted", "Linux", "ARM64"],
-        "IMAGE": "node:lts-alpine3.19",
-        "CONTAINER_OPTIONS": "--user root --privileged --rm",
-        "PACKAGE_MANAGERS": ["npm"],
-        "languages": ["node"]
-    },
-    {
-        "OS": "ubuntu",
-        "NAMED_OS": "linux",
         "ARCH": "x64",
         "TARGET": "x86_64-unknown-linux-musl",
         "RUNNER": "ubuntu-latest",
