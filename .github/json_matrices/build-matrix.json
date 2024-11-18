@@ -10,6 +10,15 @@
         "languages": ["python", "node", "java", "go", "dotnet"]
     },
     {
+        "OS": "ubuntu",
+        "NAMED_OS": "linux",
+        "RUNNER": ["self-hosted", "Linux", "ARM64"],
+        "ARCH": "arm64",
+        "TARGET": "aarch64-unknown-linux-gnu",
+        "PACKAGE_MANAGERS": ["pypi", "npm", "maven"],
+        "languages": ["python", "node", "java", "go", "dotnet"]
+    },
+    {
         "OS": "macos",
         "NAMED_OS": "darwin",
         "RUNNER": "macos-14",
@@ -17,6 +26,17 @@
         "TARGET": "aarch64-apple-darwin",
         "PACKAGE_MANAGERS": ["pypi", "npm", "maven"],
         "languages": ["python", "node", "java", "go", "dotnet"]
+    },
+    {
+        "OS": "ubuntu",
+        "NAMED_OS": "linux",
+        "ARCH": "arm64",
+        "TARGET": "aarch64-unknown-linux-musl",
+        "RUNNER": ["self-hosted", "Linux", "ARM64"],
+        "IMAGE": "node:lts-alpine3.19",
+        "CONTAINER_OPTIONS": "--user root --privileged --rm",
+        "PACKAGE_MANAGERS": ["npm"],
+        "languages": ["node"]
     },
     {
         "OS": "ubuntu",
