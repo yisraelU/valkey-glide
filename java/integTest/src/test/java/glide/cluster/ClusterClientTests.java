@@ -13,9 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import glide.api.GlideClusterClient;
-import glide.api.models.commands.PasswordUpdateMode;
 import glide.api.models.configuration.ServerCredentials;
 import glide.api.models.exceptions.ClosingException;
+import glide.api.models.exceptions.ConnectionException;
 import glide.api.models.exceptions.RequestException;
 import java.util.Map;
 import java.util.UUID;
@@ -24,7 +24,7 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @Timeout(10) // seconds
 public class ClusterClientTests {
@@ -168,8 +168,8 @@ public class ClusterClientTests {
 
     @SneakyThrows
     @ParameterizedTest
-    @EnumSource(PasswordUpdateMode.class)
-    public void password_update(PasswordUpdateMode mode) {
+    @ValueSource(booleans = {true, false})
+    public void password_update(boolean immediateAuth) {
         GlideClusterClient client =
                 GlideClusterClient.createClient(commonClusterClientConfig().build()).get();
 
@@ -185,16 +185,15 @@ public class ClusterClientTests {
 
             // set the password and forcefully drop connection for the second client
             assertEquals("OK", client.configSet(Map.of("requirepass", pwd)).get());
-            if (mode == PasswordUpdateMode.RE_AUTHENTICATE)
-                testClient.customCommand(new String[] {"RESET"}, ALL_NODES).get();
+            if (immediateAuth) testClient.customCommand(new String[] {"RESET"}, ALL_NODES).get();
             else client.customCommand(new String[] {"CLIENT", "KILL", "TYPE", "NORMAL"}, ALL_NODES).get();
 
             // client should reconnect, but will receive NOAUTH error
             var exception = assertThrows(ExecutionException.class, () -> testClient.get(key).get());
-            assertInstanceOf(RequestException.class, exception.getCause());
+            assertInstanceOf(ConnectionException.class, exception.getCause());
             assertTrue(exception.getMessage().toLowerCase().contains("noauth"));
 
-            assertEquals("OK", testClient.updateConnectionPassword(pwd, mode).get());
+            assertEquals("OK", testClient.updateConnectionPassword(pwd, immediateAuth).get());
 
             // after setting new password we should be able to work with the server
             assertEquals("meow meow", testClient.get(key).get());
