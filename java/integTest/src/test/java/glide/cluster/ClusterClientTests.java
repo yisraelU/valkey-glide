@@ -211,5 +211,19 @@ public class ClusterClientTests {
             client.configSet(Map.of("requirepass", "")).get();
             client.close();
         }
+        
+    }
+
+    @SneakyThrows
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    public void test_update_connection_password_auth_non_valid_pass(boolean immediateAuth) {
+        GlideClusterClient client = GlideClusterClient.createClient(commonClusterClientConfig().build()).get();
+        assertThrows(Exception.class, () -> {
+                client.updateConnectionPassword(null, true);
+        });
+        assertThrows(Exception.class, ()-> {
+                client.updateConnectionPassword("", true),
+        });
     }
 }
