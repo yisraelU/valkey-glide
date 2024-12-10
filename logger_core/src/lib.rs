@@ -2,9 +2,12 @@
  * Copyright Valkey GLIDE Project Contributors - SPDX Identifier: Apache-2.0
  */
 use once_cell::sync::OnceCell;
-use std::sync::RwLock;
+use std::{
+    path::{Path, PathBuf},
+    sync::RwLock,
+};
 use tracing::{self, event};
-use tracing_appender::rolling::{RollingFileAppender, Rotation};
+use tracing_appender::rolling::{RollingFileAppender, RollingWriter, Rotation};
 use tracing_subscriber::{
     filter::Filtered,
     fmt::{
@@ -21,6 +24,9 @@ use tracing_subscriber::{
     prelude::*,
     reload::{self, Handle},
 };
+
+use std::str::FromStr;
+
 // Layer-Filter pair determines whether a log will be collected
 type InnerFiltered = Filtered<Layer<Registry>, LevelFilter, Registry>;
 // A Reloadable pair of layer-filter
@@ -28,7 +34,7 @@ type InnerLayered = Layered<reload::Layer<InnerFiltered, Registry>, Registry>;
 // A reloadable layer of subscriber to a rolling file
 type FileReload = Handle<
     Filtered<
-        Layer<InnerLayered, DefaultFields, Format, RollingFileAppender>,
+        Layer<InnerLayered, DefaultFields, Format, LazyRollingFileAppender>,
         LevelFilter,
         InnerLayered,
     >,
@@ -48,6 +54,48 @@ pub static INITIATE_ONCE: InitiateOnce = InitiateOnce {
     init_once: OnceCell::new(),
 };
 
+const FILE_DIRECTORY: &str = "glide-logs";
+const ENV_GLIDE_LOG_DIR: &str = "GLIDE_LOG_DIR";
+
+/// Wraps [RollingFileAppender] to defer initialization until logging is required,
+/// allowing [init] to disable file logging on read-only filesystems.
+/// This is needed because [RollingFileAppender] tries to create the log directory on initialization.
+struct LazyRollingFileAppender {
+    file_appender: OnceCell<RollingFileAppender>,
+    rotation: Rotation,
+    directory: PathBuf,
+    filename_prefix: PathBuf,
+}
+
+impl LazyRollingFileAppender {
+    fn new(
+        rotation: Rotation,
+        directory: impl AsRef<Path>,
+        filename_prefix: impl AsRef<Path>,
+    ) -> LazyRollingFileAppender {
+        LazyRollingFileAppender {
+            file_appender: OnceCell::new(),
+            rotation,
+            directory: directory.as_ref().to_path_buf(),
+            filename_prefix: filename_prefix.as_ref().to_path_buf(),
+        }
+    }
+}
+
+impl<'a> tracing_subscriber::fmt::writer::MakeWriter<'a> for LazyRollingFileAppender {
+    type Writer = RollingWriter<'a>;
+    fn make_writer(&'a self) -> Self::Writer {
+        let file_appender = self.file_appender.get_or_init(|| {
+            RollingFileAppender::new(
+                self.rotation.clone(),
+                self.directory.clone(),
+                self.filename_prefix.clone(),
+            )
+        });
+        file_appender.make_writer()
+    }
+}
+
 #[derive(Debug)]
 pub enum Level {
     Error = 0,
@@ -55,6 +103,7 @@ pub enum Level {
     Info = 2,
     Debug = 3,
     Trace = 4,
+    Off = 5,
 }
 impl Level {
     fn to_filter(&self) -> filter::LevelFilter {
@@ -64,8 +113,24 @@ impl Level {
             Level::Info => LevelFilter::INFO,
             Level::Warn => LevelFilter::WARN,
             Level::Error => LevelFilter::ERROR,
+            Level::Off => LevelFilter::OFF,
         }
     }
+}
+
+/// Attempt to read a directory path from an environment variable. If the environment variable `envname` exists
+/// and contains a valid path - this function will create and return that path. In any case of failure,
+/// this method returns `None` (e.g. the environment variable exists but contains an empty path etc)
+pub fn create_directory_from_env(envname: &str) -> Option<String> {
+    let Ok(dirpath) = std::env::var(envname) else {
+        return None;
+    };
+
+    if dirpath.trim().is_empty() || std::fs::create_dir_all(&dirpath).is_err() {
+        return None;
+    }
+
+    Some(dirpath)
 }
 
 // Initialize the global logger to error level on the first call only
@@ -82,22 +147,34 @@ pub fn init(minimal_level: Option<Level>, file_name: Option<&str>) -> Level {
 
         let (stdout_layer, stdout_reload) = reload::Layer::new(stdout_fmt);
 
-        let file_appender = RollingFileAppender::new(
+        // Check if the environment variable GLIDE_LOG is set
+        let logs_dir =
+            create_directory_from_env(ENV_GLIDE_LOG_DIR).unwrap_or(FILE_DIRECTORY.to_string());
+        let file_appender = LazyRollingFileAppender::new(
             Rotation::HOURLY,
-            "glide-logs",
+            logs_dir,
             file_name.unwrap_or("output.log"),
         );
+
         let file_fmt = tracing_subscriber::fmt::layer()
             .with_writer(file_appender)
             .with_filter(LevelFilter::OFF);
         let (file_layer, file_reload) = reload::Layer::new(file_fmt);
 
+        // If user has set the environment variable "RUST_LOG" with a valid log verbosity, use it
+        let log_level = if let Ok(level) = std::env::var("RUST_LOG") {
+            let trace_level = tracing::Level::from_str(&level).unwrap_or(tracing::Level::TRACE);
+            LevelFilter::from(trace_level)
+        } else {
+            LevelFilter::TRACE
+        };
+
         // Enable logging only from allowed crates
         let targets_filter = filter::Targets::new()
-            .with_target("glide", LevelFilter::TRACE)
-            .with_target("redis", LevelFilter::TRACE)
-            .with_target("logger_core", LevelFilter::TRACE)
-            .with_target(std::env!("CARGO_PKG_NAME"), LevelFilter::TRACE);
+            .with_target("glide", log_level)
+            .with_target("redis", log_level)
+            .with_target("logger_core", log_level)
+            .with_target(std::env!("CARGO_PKG_NAME"), log_level);
 
         tracing_subscriber::registry()
             .with(stdout_layer)
@@ -128,7 +205,10 @@ pub fn init(minimal_level: Option<Level>, file_name: Option<&str>) -> Level {
                 });
         }
         Some(file) => {
-            let file_appender = RollingFileAppender::new(Rotation::HOURLY, "glide-logs", file);
+            // Check if the environment variable GLIDE_LOG is set
+            let logs_dir =
+                create_directory_from_env(ENV_GLIDE_LOG_DIR).unwrap_or(FILE_DIRECTORY.to_string());
+            let file_appender = LazyRollingFileAppender::new(Rotation::HOURLY, logs_dir, file);
             let _ = reloads
                 .file_reload
                 .write()
@@ -187,5 +267,42 @@ pub fn log<Message: AsRef<str>, Identifier: AsRef<str>>(
         Level::Info => log_info(log_identifier, message),
         Level::Warn => log_warn(log_identifier, message),
         Level::Error => log_error(log_identifier, message),
+        Level::Off => (),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_directory_from_env() {
+        let dir_path = format!("{}/glide-logs", std::env::temp_dir().display());
+        // Case 1: try to create an already existing folder
+        // make sure we are starting fresh
+        let _ = std::fs::remove_dir_all(&dir_path);
+        // Create the directory
+        assert!(std::fs::create_dir_all(&dir_path).is_ok());
+
+        std::env::set_var(ENV_GLIDE_LOG_DIR, &dir_path);
+        assert!(create_directory_from_env(ENV_GLIDE_LOG_DIR).is_some());
+        assert!(std::fs::metadata(&dir_path).is_ok());
+
+        // Case 2: try to create a new folder (i.e. the folder does not already exist)
+        let _ = std::fs::remove_dir_all(&dir_path);
+
+        // Create the directory
+        assert!(std::fs::create_dir_all(&dir_path).is_ok());
+        assert!(std::fs::metadata(&dir_path).is_ok());
+
+        std::env::set_var(ENV_GLIDE_LOG_DIR, &dir_path);
+        assert!(create_directory_from_env(ENV_GLIDE_LOG_DIR).is_some());
+
+        // make sure we are starting fresh
+        let _ = std::fs::remove_dir_all(&dir_path);
+
+        // Case 3: empty variable is not acceptable
+        std::env::set_var(ENV_GLIDE_LOG_DIR, "");
+        assert!(create_directory_from_env(ENV_GLIDE_LOG_DIR).is_none());
     }
 }

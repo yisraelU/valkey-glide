@@ -13,17 +13,18 @@ import {
 import { BufferReader, BufferWriter } from "protobufjs";
 import { v4 as uuidv4 } from "uuid";
 import {
-    convertGlideRecordToRecord,
     Decoder,
     FlushMode,
     FunctionRestorePolicy,
     GlideClient,
     GlideRecord,
     GlideString,
+    ListDirection,
     ProtocolVersion,
     RequestError,
     Script,
     Transaction,
+    convertGlideRecordToRecord,
 } from "..";
 import { ValkeyCluster } from "../../utils/TestUtils.js";
 import { command_request } from "../src/ProtobufMessage";
@@ -40,12 +41,10 @@ import {
     generateLuaLibCode,
     getClientConfigurationOption,
     getServerVersion,
-    parseCommandLineArgs,
     parseEndpoints,
     transactionTest,
     validateTransactionResponse,
     waitForNotBusy,
-    waitForScriptNotBusy,
 } from "./TestUtilities";
 
 const TIMEOUT = 50000;
@@ -53,11 +52,20 @@ const TIMEOUT = 50000;
 describe("GlideClient", () => {
     let testsFailed = 0;
     let cluster: ValkeyCluster;
+    let azCluster: ValkeyCluster;
     let client: GlideClient;
+    let azClient: GlideClient;
     beforeAll(async () => {
-        const standaloneAddresses =
-            parseCommandLineArgs()["standalone-endpoints"];
+        const standaloneAddresses = global.STAND_ALONE_ENDPOINT;
         cluster = standaloneAddresses
+            ? await ValkeyCluster.initFromExistingCluster(
+                  false,
+                  parseEndpoints(standaloneAddresses),
+                  getServerVersion,
+              )
+            : await ValkeyCluster.createCluster(false, 1, 1, getServerVersion);
+
+        azCluster = standaloneAddresses
             ? await ValkeyCluster.initFromExistingCluster(
                   false,
                   parseEndpoints(standaloneAddresses),
@@ -68,11 +76,16 @@ describe("GlideClient", () => {
 
     afterEach(async () => {
         await flushAndCloseClient(false, cluster.getAddresses(), client);
+        await flushAndCloseClient(false, azCluster.getAddresses(), azClient);
     });
 
     afterAll(async () => {
         if (testsFailed === 0) {
             await cluster.close();
+            await azCluster.close();
+        } else {
+            await cluster.close(true);
+            await azCluster.close();
         }
     }, TIMEOUT);
 
@@ -132,6 +145,45 @@ describe("GlideClient", () => {
                 expect.not.stringContaining("# Latencystats"),
             );
         },
+    );
+
+    it.each([ProtocolVersion.RESP2, ProtocolVersion.RESP3])(
+        "check that blocking commands returns never timeout_%p",
+        async (protocol) => {
+            client = await GlideClient.createClient(
+                getClientConfigurationOption(cluster.getAddresses(), protocol, {
+                    requestTimeout: 300,
+                }),
+            );
+
+            const promiseList = [
+                client.blmove(
+                    "source",
+                    "destination",
+                    ListDirection.LEFT,
+                    ListDirection.LEFT,
+                    0.1,
+                ),
+                client.bzpopmax(["key1", "key2"], 0),
+                client.bzpopmin(["key1", "key2"], 0),
+            ];
+
+            try {
+                for (const promise of promiseList) {
+                    const timeoutPromise = new Promise((resolve) => {
+                        setTimeout(resolve, 500);
+                    });
+                    await Promise.race([promise, timeoutPromise]);
+                }
+            } finally {
+                for (const promise of promiseList) {
+                    await Promise.resolve([promise]);
+                }
+
+                client.close();
+            }
+        },
+        5000,
     );
 
     it.each([ProtocolVersion.RESP2, ProtocolVersion.RESP3])(
@@ -1434,70 +1486,53 @@ describe("GlideClient", () => {
         TIMEOUT,
     );
 
-    it.each([ProtocolVersion.RESP2, ProtocolVersion.RESP3])(
-        "script kill killable test_%p",
-        async (protocol) => {
+    it.each([
+        [ProtocolVersion.RESP2, 5],
+        [ProtocolVersion.RESP2, 100],
+        [ProtocolVersion.RESP2, 1500],
+        [ProtocolVersion.RESP3, 5],
+        [ProtocolVersion.RESP3, 100],
+        [ProtocolVersion.RESP3, 1500],
+    ])(
+        "test inflight requests limit of %p with protocol %p",
+        async (protocol, inflightRequestsLimit) => {
             const config = getClientConfigurationOption(
                 cluster.getAddresses(),
                 protocol,
-                { requestTimeout: 10000 },
+                { inflightRequestsLimit },
             );
-            const client1 = await GlideClient.createClient(config);
-            const client2 = await GlideClient.createClient(config);
+            const client = await GlideClient.createClient(config);
 
             try {
-                // Verify that script kill raises an error when no script is running
-                await expect(client1.scriptKill()).rejects.toThrow(
-                    "No scripts in execution right now",
-                );
+                const key1 = `{nonexistinglist}:1-${uuidv4()}`;
+                const tasks: Promise<[GlideString, GlideString] | null>[] = [];
 
-                // Create a long-running script
-                const longScript = new Script(
-                    createLongRunningLuaScript(5, false),
-                );
-
-                try {
-                    // call the script without await
-                    const promise = client2
-                        .invokeScript(longScript)
-                        .catch((e) =>
-                            expect((e as Error).message).toContain(
-                                "Script killed",
-                            ),
-                        );
-
-                    let killed = false;
-                    let timeout = 4000;
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-                    while (timeout >= 0) {
-                        try {
-                            expect(await client1.scriptKill()).toEqual("OK");
-                            killed = true;
-                            break;
-                        } catch {
-                            // do nothing
-                        }
-
-                        await new Promise((resolve) =>
-                            setTimeout(resolve, 500),
-                        );
-                        timeout -= 500;
-                    }
-
-                    expect(killed).toBeTruthy();
-                    await promise;
-                } finally {
-                    await waitForScriptNotBusy(client1);
+                // Start inflightRequestsLimit blocking tasks
+                for (let i = 0; i < inflightRequestsLimit; i++) {
+                    tasks.push(client.blpop([key1], 0));
                 }
+
+                // This task should immediately fail due to reaching the limit
+                await expect(client.blpop([key1], 0)).rejects.toThrow(
+                    RequestError,
+                );
+
+                // Verify that all previous tasks are still pending
+                const timeoutPromise = new Promise((resolve) =>
+                    setTimeout(resolve, 100),
+                );
+                const allTasksStatus = await Promise.race([
+                    Promise.any(
+                        tasks.map((task) => task.then(() => "resolved")),
+                    ),
+                    timeoutPromise.then(() => "pending"),
+                ]);
+                expect(allTasksStatus).toBe("pending");
             } finally {
-                expect(await client1.scriptFlush()).toEqual("OK");
-                client1.close();
-                client2.close();
+                await client.close();
             }
         },
     );
-
     runBaseTests({
         init: async (protocol, configOverrides) => {
             const config = getClientConfigurationOption(
@@ -1505,10 +1540,18 @@ describe("GlideClient", () => {
                 protocol,
                 configOverrides,
             );
+            client = await GlideClient.createClient(config);
+
+            const configNew = getClientConfigurationOption(
+                azCluster.getAddresses(),
+                protocol,
+                configOverrides,
+            );
 
             testsFailed += 1;
+            azClient = await GlideClient.createClient(configNew);
             client = await GlideClient.createClient(config);
-            return { client, cluster };
+            return { client, cluster, azClient, azCluster };
         },
         close: (testSucceeded: boolean) => {
             if (testSucceeded) {

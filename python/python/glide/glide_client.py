@@ -5,12 +5,11 @@ import sys
 import threading
 from typing import Any, Dict, List, Optional, Tuple, Type, Union, cast
 
-import async_timeout
 from glide.async_commands.cluster_commands import ClusterCommands
 from glide.async_commands.command_args import ObjectType
 from glide.async_commands.core import CoreCommands
 from glide.async_commands.standalone_commands import StandaloneCommands
-from glide.config import BaseClientConfiguration
+from glide.config import BaseClientConfiguration, ServerCredentials
 from glide.constants import DEFAULT_READ_BYTES_SIZE, OK, TEncodable, TRequest, TResult
 from glide.exceptions import (
     ClosingError,
@@ -27,16 +26,23 @@ from glide.protobuf.connection_request_pb2 import ConnectionRequest
 from glide.protobuf.response_pb2 import RequestErrorType, Response
 from glide.protobuf_codec import PartialMessageException, ProtobufCodec
 from glide.routes import Route, set_protobuf_route
-from typing_extensions import Self
 
 from .glide import (
     DEFAULT_TIMEOUT_IN_MILLISECONDS,
     MAX_REQUEST_ARGS_LEN,
     ClusterScanCursor,
     create_leaked_bytes_vec,
+    get_statistics,
     start_socket_listener_external,
     value_from_pointer,
 )
+
+if sys.version_info >= (3, 11):
+    import asyncio as async_timeout
+    from typing import Self
+else:
+    import async_timeout
+    from typing_extensions import Self
 
 
 def get_request_error_class(
@@ -518,7 +524,7 @@ class BaseClient(CoreCommands):
                         read_bytes, read_bytes_view, offset, Response
                     )
                 except PartialMessageException:
-                    # Recieved only partial response, break the inner loop
+                    # Received only partial response, break the inner loop
                     remaining_read_bytes = read_bytes[offset:]
                     break
                 response = cast(Response, response)
@@ -526,6 +532,25 @@ class BaseClient(CoreCommands):
                     await self._process_push(response=response)
                 else:
                     await self._process_response(response=response)
+
+    async def get_statistics(self) -> dict:
+        return get_statistics()
+
+    async def _update_connection_password(
+        self, password: Optional[str], immediate_auth: bool
+    ) -> TResult:
+        request = CommandRequest()
+        request.callback_idx = self._get_callback_index()
+        if password is not None:
+            request.update_connection_password.password = password
+        request.update_connection_password.immediate_auth = immediate_auth
+        response = await self._write_request_await_response(request)
+        # Update the client binding side password if managed to change core configuration password
+        if response is OK:
+            if self.config.credentials is None:
+                self.config.credentials = ServerCredentials(password=password or "")
+                self.config.credentials.password = password or ""
+        return response
 
 
 class GlideClusterClient(BaseClient, ClusterCommands):

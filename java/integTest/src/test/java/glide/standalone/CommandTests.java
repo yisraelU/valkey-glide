@@ -784,7 +784,7 @@ public class CommandTests {
 
                 assertTrue(functionKilled);
             } finally {
-                waitForNotBusy(regularClient);
+                waitForNotBusy(regularClient::functionKill);
             }
         }
     }
@@ -835,7 +835,7 @@ public class CommandTests {
 
                 assertTrue(functionKilled);
             } finally {
-                waitForNotBusy(regularClient);
+                waitForNotBusy(regularClient::functionKill);
             }
         }
     }
@@ -1176,7 +1176,7 @@ public class CommandTests {
         assertDeepEquals(new String[] {}, emptyResult[resultCollectionIndex]);
 
         // Negative cursor
-        if (SERVER_VERSION.isGreaterThanOrEqualTo("7.9.0")) {
+        if (SERVER_VERSION.isGreaterThanOrEqualTo("8.0.0")) {
             ExecutionException executionException =
                     assertThrows(ExecutionException.class, () -> regularClient.scan("-1").get());
         } else {
@@ -1235,7 +1235,7 @@ public class CommandTests {
         assertDeepEquals(new String[] {}, emptyResult[resultCollectionIndex]);
 
         // Negative cursor
-        if (SERVER_VERSION.isGreaterThanOrEqualTo("7.9.0")) {
+        if (SERVER_VERSION.isGreaterThanOrEqualTo("8.0.0")) {
             ExecutionException executionException =
                     assertThrows(ExecutionException.class, () -> regularClient.scan(gs("-1")).get());
         } else {
@@ -1303,7 +1303,7 @@ public class CommandTests {
         assertDeepEquals(new String[] {}, emptyResult[resultCollectionIndex]);
 
         // Negative cursor
-        if (SERVER_VERSION.isGreaterThanOrEqualTo("7.9.0")) {
+        if (SERVER_VERSION.isGreaterThanOrEqualTo("8.0.0")) {
             final ScanOptions finalOptions = options;
             ExecutionException executionException =
                     assertThrows(
@@ -1392,7 +1392,7 @@ public class CommandTests {
         assertDeepEquals(new String[] {}, emptyResult[resultCollectionIndex]);
 
         // Negative cursor
-        if (SERVER_VERSION.isGreaterThanOrEqualTo("7.9.0")) {
+        if (SERVER_VERSION.isGreaterThanOrEqualTo("8.0.0")) {
             final ScanOptions finalOptions = options;
             ExecutionException executionException =
                     assertThrows(
@@ -1681,7 +1681,7 @@ public class CommandTests {
 
                 assertTrue(scriptKilled);
             } finally {
-                waitForNotBusy(regularClient);
+                waitForNotBusy(regularClient::scriptKill);
             }
         }
 
@@ -1700,7 +1700,7 @@ public class CommandTests {
     @Test
     public void scriptKill_unkillable() {
         String key = UUID.randomUUID().toString();
-        String code = createLongRunningLuaScript(5, false);
+        String code = createLongRunningLuaScript(6, false);
         Script script = new Script(code, false);
 
         CompletableFuture<Object> promise = new CompletableFuture<>();

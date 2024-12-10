@@ -4,17 +4,27 @@ Valkey General Language Independent Driver for the Enterprise (GLIDE), is an ope
 ## Supported Engine Versions
 Valkey GLIDE is API-compatible with the following engine versions:
 
-| Engine Type           |  6.2  |  7.0  |  7.2  |
-|-----------------------|-------|-------|-------|
-| Valkey                |   -   |   -   |   V   |
-| Redis                 |   V   |   V   |   V   |
+| Engine Type           |  6.2  |  7.0  |  7.2  |  8.0  |
+|-----------------------|-------|-------|-------|-------|
+| Valkey                |   -   |   -   |   V   |   V   |
+| Redis                 |   V   |   V   |   V   |   -   |
 
-## Current Status
-In this release, Valkey GLIDE is available for Python and Java. Support for Node.js is actively under development, with plans to include more programming languages in the future. We're tracking future features on the [roadmap](https://github.com/orgs/valkey-io/projects/11).
+## Current Status and upcoming releases
+In the current release, Valkey GLIDE is available for Python, Java and Node.js. Support for GO is actively under development, with plans to include more programming languages in the future.
+
+#### v1.2 (Dec. 2024)
+- Vector Similarity Search and JSON modules support
+- Availability zone routing for Read from Replica
+
+#### v1.3 (TBD)
+- GO support
+- Observability with Open Telemetry
+- Client side metrics
 
 ## Getting Started
 -   [Java](./java/README.md)
 -   [Python](./python/README.md)
+-   [Node](./node/README.md)
 -   [Documentation](https://github.com/valkey-io/valkey-glide/wiki)
 
 ## Getting Help

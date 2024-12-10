@@ -4,7 +4,6 @@
 
 import { expect } from "@jest/globals";
 import { exec } from "child_process";
-import parseArgs from "minimist";
 import { gte } from "semver";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -178,7 +177,6 @@ export function flushallOnPort(port: number): Promise<void> {
  */
 export const parseEndpoints = (endpointsStr: string): [string, number][] => {
     try {
-        console.log(endpointsStr);
         const endpoints: string[][] = endpointsStr
             .split(",")
             .map((endpoint) => endpoint.split(":"));
@@ -331,40 +329,6 @@ export function createLongRunningLuaScript(
     return script.replaceAll("$timeout", timeout.toString());
 }
 
-export async function waitForScriptNotBusy(
-    client: GlideClusterClient | GlideClient,
-) {
-    // If function wasn't killed, and it didn't time out - it blocks the server and cause rest test to fail.
-    let isBusy = true;
-
-    do {
-        try {
-            await client.scriptKill();
-        } catch (err) {
-            // should throw `notbusy` error, because the function should be killed before
-            if ((err as Error).message.toLowerCase().includes("notbusy")) {
-                isBusy = false;
-            }
-        }
-    } while (isBusy);
-}
-
-/**
- * Parses the command-line arguments passed to the Node.js process.
- *
- * @returns Parsed command-line arguments.
- *
- * @example
- * ```typescript
- * // Command: node script.js --name="John Doe" --age=30
- * const args = parseCommandLineArgs();
- * // args = { name: 'John Doe', age: 30 }
- * ```
- */
-export function parseCommandLineArgs() {
-    return parseArgs(process.argv.slice(2));
-}
-
 export async function testTeardown(
     cluster_mode: boolean,
     option: BaseClientConfiguration,
@@ -388,6 +352,8 @@ export const getClientConfigurationOption = (
             port,
         })),
         protocol,
+        useTLS: global.TLS ?? false,
+        requestTimeout: 1000,
         ...configOverrides,
     };
 };
@@ -397,19 +363,17 @@ export async function flushAndCloseClient(
     addresses: [string, number][],
     client?: BaseClient,
 ) {
-    await testTeardown(
-        cluster_mode,
-        getClientConfigurationOption(addresses, ProtocolVersion.RESP3, {
-            requestTimeout: 2000,
-        }),
-    );
-
-    // some tests don't initialize a client
-    if (client == undefined) {
-        return;
+    try {
+        await testTeardown(
+            cluster_mode,
+            getClientConfigurationOption(addresses, ProtocolVersion.RESP3, {
+                requestTimeout: 2000,
+            }),
+        );
+    } finally {
+        // some tests don't initialize a client
+        client?.close();
     }
-
-    client.close();
 }
 
 /**
@@ -892,7 +856,7 @@ export async function transactionTest(
         ["0", [field.toString(), value.toString()]],
     ]);
 
-    if (gte(version, "7.9.0")) {
+    if (gte(version, "8.0.0")) {
         baseTransaction.hscan(key4, "0", { noValues: false });
         responseData.push([
             'hscan(key4, "0", {noValues: false})',
@@ -961,14 +925,14 @@ export async function transactionTest(
         baseTransaction.lmpop([key24], ListDirection.LEFT);
         responseData.push([
             "lmpop([key22], ListDirection.LEFT)",
-            [{ key: key24, elements: [field2] }],
+            convertRecordToGlideRecord({ [key24]: [field] }),
         ]);
         baseTransaction.lpush(key24, [field2]);
         responseData.push(["lpush(key22, [2])", 2]);
         baseTransaction.blmpop([key24], ListDirection.LEFT, 0.1, 1);
         responseData.push([
             "blmpop([key22], ListDirection.LEFT, 0.1, 1)",
-            [{ key: key24, elements: [field2] }],
+            convertRecordToGlideRecord({ [key24]: [field] }),
         ]);
     }
 
@@ -1173,7 +1137,7 @@ export async function transactionTest(
     baseTransaction.zscan(key12, "0");
     responseData.push(['zscan(key12, "0")', ["0", ["one", "1", "two", "2"]]]);
 
-    if (gte(version, "7.9.0")) {
+    if (gte(version, "8.0.0")) {
         baseTransaction.zscan(key12, "0", { noScores: false });
         responseData.push([
             'zscan(key12, "0", {noScores: false})',
@@ -1528,7 +1492,6 @@ export async function transactionTest(
     responseData.push(["xgroupDestroy(key9, groupName1)", true]);
     baseTransaction.xgroupDestroy(key9, groupName2);
     responseData.push(["xgroupDestroy(key9, groupName2)", true]);
-
     baseTransaction.rename(key9, key10);
     responseData.push(["rename(key9, key10)", "OK"]);
     baseTransaction.exists([key10]);
@@ -1605,7 +1568,7 @@ export async function transactionTest(
         ]);
     }
 
-    if (gte(version, "7.9.0")) {
+    if (gte(version, "8.0.0")) {
         baseTransaction.set(key17, "foobar");
         responseData.push(['set(key17, "foobar")', "OK"]);
         baseTransaction.bitcount(key17, {
@@ -1639,7 +1602,7 @@ export async function transactionTest(
     responseData.push(["geoadd(key18, { Palermo: ..., Catania: ... })", 2]);
     baseTransaction.geopos(key18, [palermo, catania]);
     responseData.push([
-        'geopos(key18, ["Palermo", "Catania"])',
+        'geopos(key18, ["palermo", "catania"])',
         [
             [13.36138933897018433, 38.11555639549629859],
             [15.08726745843887329, 37.50266842333162032],
@@ -1651,12 +1614,12 @@ export async function transactionTest(
         unit: GeoUnit.KILOMETERS,
     });
     responseData.push([
-        'geodist(key18, "Palermo", "Catania", { unit: GeoUnit.KILOMETERS })',
+        'geodist(key18, "palermo", "catania", { unit: GeoUnit.KILOMETERS })',
         166.2742,
     ]);
     baseTransaction.geohash(key18, [palermo, catania, non_existing_member]);
     responseData.push([
-        'geohash(key18, ["Palermo", "Catania", "NonExisting"])',
+        'geohash(key18, ["palermo", "catania", "NonExisting"])',
         ["sqc8b49rny0", "sqdtr74hyu0", null],
     ]);
     baseTransaction.zadd(key23, { one: 1.0 });
@@ -1717,7 +1680,7 @@ export async function transactionTest(
             [palermo.toString(), catania.toString()],
         ]);
         responseData.push([
-            'geosearch(key18, "Palermo", R200 KM, ASC 2 3x true)',
+            'geosearch(key18, "palermo", R200 KM, ASC 2 3x true)',
             [
                 [
                     palermo.toString(),
@@ -1903,8 +1866,6 @@ export async function transactionTest(
         responseData.push(["sortReadOnly(key21)", ["1", "2", "3"]]);
     }
 
-    baseTransaction.wait(1, 200);
-    responseData.push(["wait(1, 200)", 1]);
     return responseData;
 }
 

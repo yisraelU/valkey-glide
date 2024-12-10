@@ -1,6 +1,8 @@
-import { RedisClient, RedisClusterClient } from "@valkey/valkey-glide";
-import { RedisCluster } from "../../TestUtils.js";
-
+/**
+ * Copyright Valkey GLIDE Project Contributors - SPDX Identifier: Apache-2.0
+ */
+import { GlideClient, GlideClusterClient } from "@valkey/valkey-glide";
+import { ValkeyCluster } from "../../TestUtils.js";
 
 async function runCommands(client) {
     console.log("Executing commands");
@@ -38,7 +40,9 @@ async function runCommands(client) {
     // check that the correct number of keys were deleted
     if (deletedKeysNum !== 3) {
         console.log(deletedKeysNum);
-        throw new Error(`Unexpected number of keys deleted, expected 3, got ${deletedKeysNum}`);
+        throw new Error(
+            `Unexpected number of keys deleted, expected 3, got ${deletedKeysNum}`,
+        );
     }
     // check that the keys were deleted
     for (let i = 1; i <= 3; i++) {
@@ -62,24 +66,35 @@ async function closeClientAndCluster(client, Cluster) {
     console.log("Clusters closed");
 }
 
+async function getServerVersion(addresses, clusterMode) {
+    // General version for those tests
+    return "255.255.255";
+}
+
 async function clusterTests() {
     try {
         console.log("Testing cluster");
         console.log("Creating cluster");
-        let redisCluster = await RedisCluster.createCluster(true,
+        let valkeyCluster = await ValkeyCluster.createCluster(
+            true,
             3,
             1,
+            getServerVersion,
         );
         console.log("Cluster created");
 
         console.log("Connecting to cluster");
-        let addresses = redisCluster.getAddresses().map((address) => { return { host: address[0], port: address[1] } });
-        const client = await RedisClusterClient.createClient({ addresses: addresses });
+        let addresses = valkeyCluster.getAddresses().map((address) => {
+            return { host: address[0], port: address[1] };
+        });
+        const client = await GlideClusterClient.createClient({
+            addresses: addresses,
+        });
         console.log("Connected to cluster");
 
         await runCommands(client);
 
-        await closeClientAndCluster(client, redisCluster);
+        await closeClientAndCluster(client, valkeyCluster);
         console.log("Done");
     } catch (error) {
         // Need this part just when running in our self-hosted runner, so if the test fails before closing Clusters we still kill them and clean up
@@ -94,22 +109,25 @@ async function clusterTests() {
 
 async function standaloneTests() {
     try {
-        console.log("Testing standalone Cluster")
+        console.log("Testing standalone Cluster");
         console.log("Creating Cluster");
-        let redisCluster = await RedisCluster.createCluster(false,
+        let valkeyCluster = await ValkeyCluster.createCluster(
+            false,
             1,
             1,
+            getServerVersion,
         );
         console.log("Cluster created");
 
         console.log("Connecting to Cluster");
-        let addresses = redisCluster.getAddresses().map((address) => { return { host: address[0], port: address[1] } });
-        const client = await RedisClient.createClient({ addresses: addresses });
+        let addresses = valkeyCluster.getAddresses().map((address) => {
+            return { host: address[0], port: address[1] };
+        });
+        const client = await GlideClient.createClient({ addresses: addresses });
         console.log("Connected to Cluster");
 
-        await closeClientAndCluster(client, redisCluster);
+        await closeClientAndCluster(client, valkeyCluster);
         console.log("Done");
-
     } catch (error) {
         // Need this part just when running in our self-hosted runner, so if the test fails before closing Clusters we still kill them and clean up
         if (process.platform === "linux" && process.arch in ["arm", "arm64"]) {
@@ -119,7 +137,6 @@ async function standaloneTests() {
         throw error;
     }
 }
-
 
 async function main() {
     await clusterTests();

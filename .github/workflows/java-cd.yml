@@ -86,9 +86,6 @@ jobs:
                     echo "No cleaning needed"
                   fi
             - uses: actions/checkout@v4
-              with:
-                  submodules: recursive
-
             - name: Set up JDK
               uses: actions/setup-java@v4
               with:
@@ -212,7 +209,12 @@ jobs:
                   exit 1
 
     test-deployment-on-all-architectures:
-        needs: [set-release-version, load-platform-matrix, publish-to-maven-central-deployment]
+        needs:
+            [
+                set-release-version,
+                load-platform-matrix,
+                publish-to-maven-central-deployment,
+            ]
         env:
             JAVA_VERSION: "11"
             RELEASE_VERSION: ${{ needs.set-release-version.outputs.RELEASE_VERSION }}
@@ -221,18 +223,10 @@ jobs:
             fail-fast: false
             matrix:
                 host: ${{ fromJson(needs.load-platform-matrix.outputs.PLATFORM_MATRIX) }}
-
         runs-on: ${{ matrix.host.RUNNER }}
         steps:
-            - name: Start Valkey server
-              uses: ./.github/actions/install-valkey
-              with:
-                engine-version: "7.2.5"
-                target: ${{ matrix.host.TARGET }}
-
-            - uses: actions/checkout@v4
-              with:
-                  submodules: recursive
+            - name: Checkout
+              uses: actions/checkout@v4
 
             - name: Set up JDK
               uses: actions/setup-java@v4
@@ -244,6 +238,7 @@ jobs:
               uses: ./.github/workflows/install-shared-dependencies
               with:
                   os: ${{ matrix.host.OS }}
+                  engine-version: "7.2"
                   target: ${{ matrix.host.TARGET }}
                   github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -253,17 +248,30 @@ jobs:
                   version: "26.1"
                   repo-token: ${{ secrets.GITHUB_TOKEN }}
 
+            - name: Start standalone Valkey server
+              working-directory: utils
+              id: port
+              run: |
+                  PORT=$(python3 ./cluster_manager.py start -r 0 2>&1 | grep CLUSTER_NODES | cut -d = -f 2 | cut -d , -f 1 | cut -d : -f 2)
+                  echo "PORT=$PORT" >> $GITHUB_OUTPUT
+
             - name: Test deployment
               working-directory: java
+              env:
+                  PORT: ${{ steps.port.outputs.PORT }}
               run: |
                   export ORG_GRADLE_PROJECT_centralManualTestingAuthHeaderName="Authorization"
                   export ORG_GRADLE_PROJECT_centralManualTestingAuthHeaderValue="Bearer $(echo "${{ secrets.CENTRAL_TOKEN_USERNAME }}:${{ secrets.CENTRAL_TOKEN_PASSWORD }}" | base64)"
                   export GLIDE_RELEASE_VERSION=${{ env.RELEASE_VERSION }}
-                  ./gradlew :benchmarks:run --args="--minimal --clients glide"
+                  ./gradlew :benchmarks:run --args="--minimal --clients glide --port ${{ env.PORT }}"
 
     publish-release-to-maven:
         if: ${{ inputs.maven_publish == true || github.event_name == 'push' }}
-        needs: [test-deployment-on-all-architectures]
+        needs:
+            [
+                publish-to-maven-central-deployment,
+                test-deployment-on-all-architectures,
+            ]
         runs-on: ubuntu-latest
         environment: AWS_ACTIONS
         env:
@@ -277,7 +285,11 @@ jobs:
 
     drop-deployment-if-validation-fails:
         if: ${{ failure() }}
-        needs: [publish-to-maven-central-deployment, test-deployment-on-all-architectures]
+        needs:
+            [
+                publish-to-maven-central-deployment,
+                test-deployment-on-all-architectures,
+            ]
         runs-on: ubuntu-latest
         env:
             DEPLOYMENT_ID: ${{ needs.publish-to-maven-central-deployment.outputs.DEPLOYMENT_ID }}
@@ -287,4 +299,3 @@ jobs:
                   curl --request DELETE \
                   -u "${{ secrets.CENTRAL_TOKEN_USERNAME }}:${{ secrets.CENTRAL_TOKEN_PASSWORD }}" \
                   "https://central.sonatype.com/api/v1/publisher/deployment/${{ env.DEPLOYMENT_ID }}"
-

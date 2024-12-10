@@ -1,9 +1,12 @@
 /** Copyright Valkey GLIDE Project Contributors - SPDX Identifier: Apache-2.0 */
 package glide;
 
-import static glide.TestConfiguration.CLUSTER_PORTS;
-import static glide.TestConfiguration.STANDALONE_PORTS;
+import static glide.TestConfiguration.AZ_CLUSTER_HOSTS;
+import static glide.TestConfiguration.CLUSTER_HOSTS;
+import static glide.TestConfiguration.STANDALONE_HOSTS;
+import static glide.TestConfiguration.TLS;
 import static glide.api.models.GlideString.gs;
+import static glide.api.models.configuration.RequestRoutingConfiguration.SimpleSingleNodeRoute.RANDOM;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -87,14 +92,35 @@ public class TestUtilities {
 
     public static GlideClientConfiguration.GlideClientConfigurationBuilder<?, ?>
             commonClientConfig() {
-        return GlideClientConfiguration.builder()
-                .address(NodeAddress.builder().port(STANDALONE_PORTS[0]).build());
+        var builder = GlideClientConfiguration.builder();
+        for (var host : STANDALONE_HOSTS) {
+            var parts = host.split(":");
+            builder.address(
+                    NodeAddress.builder().host(parts[0]).port(Integer.parseInt(parts[1])).build());
+        }
+        return builder.useTLS(TLS);
     }
 
     public static GlideClusterClientConfiguration.GlideClusterClientConfigurationBuilder<?, ?>
             commonClusterClientConfig() {
-        return GlideClusterClientConfiguration.builder()
-                .address(NodeAddress.builder().port(CLUSTER_PORTS[0]).build());
+        var builder = GlideClusterClientConfiguration.builder();
+        for (var host : CLUSTER_HOSTS) {
+            var parts = host.split(":");
+            builder.address(
+                    NodeAddress.builder().host(parts[0]).port(Integer.parseInt(parts[1])).build());
+        }
+        return builder.useTLS(TLS);
+    }
+
+    public static GlideClusterClientConfiguration.GlideClusterClientConfigurationBuilder<?, ?>
+            azClusterClientConfig() {
+        var builder = GlideClusterClientConfiguration.builder();
+        for (var host : AZ_CLUSTER_HOSTS) {
+            var parts = host.split(":");
+            builder.address(
+                    NodeAddress.builder().host(parts[0]).port(Integer.parseInt(parts[1])).build());
+        }
+        return builder.useTLS(TLS);
     }
 
     /**
@@ -382,17 +408,18 @@ public class TestUtilities {
         return script.replace("$timeout", Integer.toString(timeout));
     }
 
-    public static void waitForNotBusy(BaseClient client) {
+    /**
+     * Lock test until server completes a script/function execution.
+     *
+     * @param lambda Client api reference to use for checking the server.
+     */
+    public static void waitForNotBusy(Supplier<CompletableFuture<?>> lambda) {
         // If function wasn't killed, and it didn't time out - it blocks the server and cause rest
         // test to fail.
         boolean isBusy = true;
         do {
             try {
-                if (client instanceof GlideClusterClient) {
-                    ((GlideClusterClient) client).functionKill().get();
-                } else if (client instanceof GlideClient) {
-                    ((GlideClient) client).functionKill().get();
-                }
+                lambda.get().get();
             } catch (Exception busy) {
                 // should throw `notbusy` error, because the function should be killed before
                 if (busy.getMessage().toLowerCase().contains("notbusy")) {
@@ -405,12 +432,18 @@ public class TestUtilities {
     /**
      * This method returns the server version using a glide client.
      *
-     * @param glideClient Glide client to be used for running the info command.
+     * @param client Glide client to be used for running the info command.
      * @return String The server version number.
      */
     @SneakyThrows
-    public static String getServerVersion(@NonNull final GlideClient glideClient) {
-        String infoResponse = glideClient.info(new Section[] {Section.SERVER}).get();
+    public static String getServerVersion(@NonNull final BaseClient client) {
+        String infoResponse =
+                client instanceof GlideClient
+                        ? ((GlideClient) client).info(new Section[] {Section.SERVER}).get()
+                        : ((GlideClusterClient) client)
+                                .info(new Section[] {Section.SERVER}, RANDOM)
+                                .get()
+                                .getSingleValue();
         Map<String, String> infoResponseMap = parseInfoResponseToMap(infoResponse);
         if (infoResponseMap.containsKey(VALKEY_VERSION_KEY)) {
             return infoResponseMap.get(VALKEY_VERSION_KEY);
