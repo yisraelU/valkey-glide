@@ -10,6 +10,7 @@
 #### Breaking Changes
 
 #### Fixes
+* Core: Ensure cluster client creation fail when engine is < 7.0 and sharded subscriptions are configured ([#2819](https://github.com/valkey-io/valkey-glide/pull/2819))
 
 #### Operational Enhancements
 
