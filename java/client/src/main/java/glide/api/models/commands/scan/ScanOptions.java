@@ -60,6 +60,8 @@ public class ScanOptions extends BaseScanOptions {
         return super.toArgs();
     }
 
+    private final Boolean allowNonCoveredSlots;
+
     /**
      * @return the pattern used for the <code>MATCH</code> filter.
      */
@@ -85,5 +87,12 @@ public class ScanOptions extends BaseScanOptions {
      */
     public ObjectType getType() {
         return type;
+    }
+
+    /**
+     * @return whether allow non covered slots.
+     */
+    public Boolean getAllowNonCoveredSlots() {
+        return allowNonCoveredSlots;
     }
 }

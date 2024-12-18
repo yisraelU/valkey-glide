@@ -1,6 +1,7 @@
 /** Copyright Valkey GLIDE Project Contributors - SPDX Identifier: Apache-2.0 */
 package glide.cluster;
 
+import static glide.TestConfiguration.CLUSTER_HOSTS;
 import static glide.TestConfiguration.SERVER_VERSION;
 import static glide.TestUtilities.assertDeepEquals;
 import static glide.TestUtilities.checkFunctionListResponse;
@@ -15,6 +16,7 @@ import static glide.TestUtilities.generateLuaLibCodeBinary;
 import static glide.TestUtilities.getFirstEntryFromMultiValue;
 import static glide.TestUtilities.getValueFromInfo;
 import static glide.TestUtilities.parseInfoResponseToMap;
+import static glide.TestUtilities.waitForClusterReady;
 import static glide.TestUtilities.waitForNotBusy;
 import static glide.api.BaseClient.OK;
 import static glide.api.models.GlideString.gs;
@@ -86,6 +88,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -3013,6 +3016,99 @@ public class CommandTests {
         }
         cursor.releaseCursorHandle();
         assertEquals(streamData.keySet(), results);
+    }
+
+    @Test
+    @SneakyThrows
+    @Timeout(100)
+    public void test_cluster_scan_non_covered_slots() {
+        assertEquals(OK, clusterClient.flushall().get());
+        String key = UUID.randomUUID().toString();
+        for (int i = 0; i < 1000; i++) {
+            String result = clusterClient.set(key + ":" + i, "value").get();
+            assertEquals(OK, result);
+        }
+        ClusterScanCursor cursor = ClusterScanCursor.initalCursor();
+        Object[] response = clusterClient.scan(cursor).get();
+        cursor.releaseCursorHandle();
+        cursor = (ClusterScanCursor) response[0];
+        assertFalse(cursor.isFinished());
+        clusterClient.configSet(Map.of("cluster-require-full-coverage", "no"));
+        // forget one server
+        String addressToForget = CLUSTER_HOSTS[0];
+        String[] splitAddressToForget = addressToForget.split(":");
+        String[] allOtherAddresses = Arrays.copyOfRange(CLUSTER_HOSTS, 1, CLUSTER_HOSTS.length);
+        var idToForget =
+                clusterClient
+                        .customCommand(
+                                new String[] {"CLUSTER", "MYID"},
+                                new ByAddressRoute(
+                                        splitAddressToForget[0], Integer.parseInt(splitAddressToForget[1])))
+                        .get()
+                        .getSingleValue();
+        for (String otherAddress : allOtherAddresses) {
+            String[] splitOtherAddress = otherAddress.split(":");
+            clusterClient.customCommand(
+                    new String[] {"CLUSTER", "FORGET", (String) idToForget},
+                    new ByAddressRoute(splitOtherAddress[0], Integer.parseInt(splitOtherAddress[1])));
+        }
+        // now we let it few seconds gossip to get the new cluster configuration
+        assertTrue(waitForClusterReady(clusterClient, allOtherAddresses.length));
+        // Iterate scan to get missing slots error
+        ExecutionException executionException =
+                assertThrows(
+                        ExecutionException.class,
+                        () -> {
+                            ClusterScanCursor cursor2 = ClusterScanCursor.initalCursor();
+                            while (!cursor2.isFinished()) {
+                                Object[] scanResponse = clusterClient.scan(cursor2).get();
+                                cursor2.releaseCursorHandle();
+                                cursor2 = (ClusterScanCursor) scanResponse[0];
+                            }
+                        });
+        assertTrue(
+                executionException
+                        .getMessage()
+                        .contains("Could not find an address covering a slot, SCAN operation cannot continue"));
+
+        // Scan with allow_non_covered_slots=true
+        ClusterScanCursor cursor3 = ClusterScanCursor.initalCursor();
+        while (!cursor3.isFinished()) {
+            Object[] nonCoverScanResult =
+                    clusterClient
+                            .scan(cursor3, ScanOptions.builder().allowNonCoveredSlots(true).build())
+                            .get();
+            cursor3.releaseCursorHandle();
+            cursor3 = (ClusterScanCursor) nonCoverScanResult[0];
+        }
+        assertTrue(cursor3.isFinished());
+        // Get keys using 'KEYS *' from the remaining nodes
+        List<Object> keys = new ArrayList<>();
+        for (String address : allOtherAddresses) {
+            String[] splitAddress = address.split(":");
+            ClusterValue<Object> keysResult =
+                    clusterClient
+                            .customCommand(
+                                    new String[] {"KEYS", "*"},
+                                    new ByAddressRoute(splitAddress[0], Integer.parseInt(splitAddress[1])))
+                            .get();
+            assertNotNull(keysResult);
+            assertTrue(keysResult.hasSingleData());
+            keys.addAll(List.of((Object[]) keysResult.getSingleValue()));
+        }
+
+        ClusterScanCursor cursor4 = ClusterScanCursor.initalCursor();
+        List<Object> results = new ArrayList<>();
+        while (!cursor4.isFinished()) {
+            Object[] result =
+                    clusterClient
+                            .scan(cursor4, ScanOptions.builder().allowNonCoveredSlots(true).build())
+                            .get();
+            results.addAll(List.of((Object[]) result[1]));
+            cursor4.releaseCursorHandle();
+            cursor4 = (ClusterScanCursor) result[0];
+        }
+        assertEquals(new HashSet<>(keys), new HashSet<>(results));
     }
 
     @SneakyThrows

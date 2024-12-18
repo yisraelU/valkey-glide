@@ -452,4 +452,43 @@ public class TestUtilities {
         }
         return null;
     }
+
+    /**
+     * Helper function to get a number of nodes, and ask the cluster till we get the number of nodes
+     *
+     * @param clusterClient Glide cluster client to be used for executing custom command
+     * @param count number of nodes expected
+     * @return true if we get the number of expected nodes
+     */
+    @SneakyThrows
+    public static boolean waitForClusterReady(GlideClusterClient clusterClient, int count) {
+        long timeout = 20000; // 20 seconds
+        long startTime = System.currentTimeMillis();
+
+        while (true) {
+            if (System.currentTimeMillis() - startTime > timeout) {
+                return false;
+            }
+            ClusterValue<Object> clusterInfo =
+                    clusterClient.customCommand(new String[] {"CLUSTER", "INFO"}).get();
+            if (clusterInfo != null && clusterInfo.hasSingleData()) {
+                String[] clusterInfoLines = ((String) clusterInfo.getSingleValue()).split("\n");
+                Map<String, String> clusterInfoMap =
+                        Arrays.stream(clusterInfoLines)
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .map(s -> s.split(":", 2))
+                                .collect(Collectors.toMap(parts -> parts[0].trim(), parts -> parts[1].trim()));
+                if ("ok".equals(clusterInfoMap.get("cluster_state"))
+                        && Integer.parseInt(clusterInfoMap.getOrDefault("cluster_known_nodes", "0")) == count) {
+                    break;
+                }
+            }
+            Thread.sleep(2000);
+        }
+        // we need to make sure that the inner core refresh slots so we make sure we accumulate 60
+        // seconds
+        Thread.sleep(60000 - (System.currentTimeMillis() - startTime));
+        return true;
+    }
 }
