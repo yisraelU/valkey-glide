@@ -486,9 +486,9 @@ public class TestUtilities {
             }
             Thread.sleep(2000);
         }
-        // we need to make sure that the inner core refresh slots so we make sure we accumulate 100
+        // we need to make sure that the inner core refresh slots so we make sure we accumulate 60
         // seconds
-        Thread.sleep(100000 - (System.currentTimeMillis() - startTime));
+        Thread.sleep(60000 - (System.currentTimeMillis() - startTime));
         return true;
     }
 }

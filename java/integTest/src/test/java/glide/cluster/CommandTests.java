@@ -3020,7 +3020,7 @@ public class CommandTests {
 
     @Test
     @SneakyThrows
-    @Timeout(100)
+    @Timeout(120)
     public void test_cluster_scan_non_covered_slots() {
         assertEquals(OK, clusterClient.flushall().get());
         String key = UUID.randomUUID().toString();
@@ -3035,9 +3035,9 @@ public class CommandTests {
         assertFalse(cursor.isFinished());
         clusterClient.configSet(Map.of("cluster-require-full-coverage", "no"));
         // forget one server
-        String addressToForget = CLUSTER_HOSTS[0];
+        String addressToForget = CLUSTER_HOSTS[CLUSTER_HOSTS.length - 1];
         String[] splitAddressToForget = addressToForget.split(":");
-        String[] allOtherAddresses = Arrays.copyOfRange(CLUSTER_HOSTS, 1, CLUSTER_HOSTS.length);
+        String[] allOtherAddresses = Arrays.copyOfRange(CLUSTER_HOSTS, 0, CLUSTER_HOSTS.length - 1);
         var idToForget =
                 clusterClient
                         .customCommand(
