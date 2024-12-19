@@ -589,8 +589,8 @@ where
             // Error if slots are not covered and scanning is not allowed
             return Err(RedisError::from((
                     ErrorKind::NotAllSlotsCovered,
-                    "Could not find an address covering a slot, SCAN operation cannot continue \n
-                    If you want to continue scanning even if some slots are not covered, set allow_non_covered_slots to true \n
+                    "Could not find an address covering a slot, SCAN operation cannot continue \n 
+                    If you want to continue scanning even if some slots are not covered, set allow_non_covered_slots to true \n 
                     Note that this may lead to incomplete scanning, and the SCAN operation lose its all guarantees ",
                 )));
         }
