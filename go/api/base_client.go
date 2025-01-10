@@ -1483,3 +1483,11 @@ func (client *baseClient) Persist(key string) (Result[bool], error) {
 	}
 	return handleBooleanResponse(result)
 }
+
+func (client *baseClient) XAck(key string, group string, ids []string) (Result[int64], error) {
+	result, err := client.executeCommand(C.XAck, append([]string{key, group}, ids...))
+	if err != nil {
+		return CreateNilInt64Result(), err
+	}
+	return handleLongResponse(result)
+}

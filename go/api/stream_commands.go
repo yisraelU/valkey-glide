@@ -49,4 +49,27 @@ type StreamCommands interface {
 	//
 	// [valkey.io]: https://valkey.io/commands/xadd/
 	XAddWithOptions(key string, values [][]string, options *options.XAddOptions) (Result[string], error)
+
+	// Returns the number of messages that were successfully acknowledged by the consumer group member
+	// of a stream. This command should be called on a pending message so that such message does not
+	// get processed again.
+	//
+	// See [valkey.io] for details.
+	//
+	// Parameters:
+	//  key      - The key of the stream.
+	//  group    - he consumer group name.
+	//  ids      - Stream entry IDs to acknowledge and purge messages.
+	//
+	// Return value:
+	//  Result[int64] - The number of messages that were successfully acknowledged.
+	//
+	// For example:
+	//  options := options.NewXAddOptions().SetId("100-500").SetDontMakeNewStream()
+	//  result, err := client.XAddWithOptions("myStream", [][]string{{"field1", "value1"}, {"field2", "value2"}}, options)
+	//  result.IsNil(): false
+	//  result.Value(): "100-500"
+	//
+	// [valkey.io]: https://valkey.io/commands/xack/
+	XAck(key string, group string, ids []string) (Result[int64], error)
 }

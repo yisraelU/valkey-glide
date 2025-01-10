@@ -4484,3 +4484,9 @@ func (suite *GlideTestSuite) TestPersist() {
 		assert.False(t, resultInvalidKey.Value())
 	})
 }
+
+func (suite *GlideTestSuite) TestXAck() {
+	suite.runWithDefaultClients(func(client api.BaseClient) {
+
+	})
+}
