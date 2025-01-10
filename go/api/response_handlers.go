@@ -458,3 +458,29 @@ func convertToResultStringArray(input []interface{}) ([]Result[string], error) {
 	}
 	return result, nil
 }
+
+func handleXPendingSummaryResponse(response *C.struct_CommandResponse) (XPendingSummary, error) {
+	defer C.free_command_response(response)
+
+	if response == nil || response.response_type == uint32(C.Null) {
+		return CreateNilXPendingSummary(), nil
+	}
+
+	typeErr := checkResponseType(response, C.Array, true)
+	if typeErr != nil {
+		return CreateNilXPendingSummary(), typeErr
+	}
+
+	slice, err := parseArray(response)
+	if err != nil {
+		return CreateNilXPendingSummary(), err
+	}
+
+	arr := slice.([]interface{})
+	NumOfMessages := arr[0].(int64)
+	StartId := CreateStringResult(arr[1].(string))
+	EndId := CreateStringResult(arr[2].(string))
+	ConsumerPendingMessages := CreateConsumerPendingMessagesResult(arr[3].([]interface{}))
+
+	return XPendingSummary{NumOfMessages, StartId, EndId, ConsumerPendingMessages}, nil
+}

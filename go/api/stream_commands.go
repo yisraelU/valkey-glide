@@ -49,4 +49,8 @@ type StreamCommands interface {
 	//
 	// [valkey.io]: https://valkey.io/commands/xadd/
 	XAddWithOptions(key string, values [][]string, options *options.XAddOptions) (Result[string], error)
+
+	XPending(key string, group string) (XPendingSummary, error)
+
+	// XPendingWithOptions(key string, group string, options *options.XPendingOptions) ([]XPendingDetail, error)
 }
