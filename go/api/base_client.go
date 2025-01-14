@@ -1622,3 +1622,28 @@ func (client *baseClient) XLen(key string) (int64, error) {
 	}
 	return handleIntResponse(result)
 }
+
+func (client *baseClient) ZScan(key string, cursor string) (Result[string], []Result[string], error) {
+	result, err := client.executeCommand(C.ZScan, []string{key, cursor})
+	if err != nil {
+		return CreateNilStringResult(), nil, err
+	}
+	return handleScanResponse(result)
+}
+
+func (client *baseClient) ZScanWithOptions(
+	key string,
+	cursor string,
+	options *options.ZScanOptions,
+) (Result[string], []Result[string], error) {
+	optionArgs, err := options.ToArgs()
+	if err != nil {
+		return CreateNilStringResult(), nil, err
+	}
+
+	result, err := client.executeCommand(C.ZScan, append([]string{key, cursor}, optionArgs...))
+	if err != nil {
+		return CreateNilStringResult(), nil, err
+	}
+	return handleScanResponse(result)
+}

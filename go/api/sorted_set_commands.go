@@ -377,4 +377,59 @@ type SortedSetCommands interface {
 	//
 	// [valkey.io]: https://valkey.io/commands/zrevrank/
 	ZRevRankWithScore(key string, member string) (Result[int64], Result[float64], error)
+
+	// Iterates incrementally over a sorted set.
+	//
+	// See [valkey.io] for details.
+	//
+	// Parameters:
+	//   key - The key of the sorted set.
+	//   cursor - The cursor that points to the next iteration of results.
+	//            A value of `"0"` indicates the start of the search.
+	//            For Valkey 8.0 and above, negative cursors are treated like the initial cursor("0").
+	//
+	// Return value:
+	//  The first return value is the `cursor` for the next iteration of results. `"0"` will be the `cursor`
+	//     returned on the last iteration of the sorted set.
+	//  The second return value is always an array of the subset of the sorted set held in `key`.
+	//  The array is a flattened series of `string` pairs, where the value is at even indices and the score is at odd indices.
+	//
+	// Example:
+	//	 // assume "key" contains a set
+	// 	 resCursor, resCol, err := client.ZScan("key", "0")
+	//   for resCursor != "0" {
+	// 	 	resCursor, resCol, err = client.ZScan("key", "0")
+	//   	fmt.Println("Cursor: ", resCursor.Value())
+	//   	fmt.Println("Members: ", resCol.Value())
+	//   }
+	//
+	// [valkey.io]: https://valkey.io/commands/sscan/
+	ZScan(key string, cursor string) (Result[string], []Result[string], error)
+
+	// Iterates incrementally over a sorted set.
+	//
+	// See [valkey.io] for details.
+	//
+	// Parameters:
+	//   key - The key of the sorted set.
+	//   cursor - The cursor that points to the next iteration of results.
+	//   options - The options for the command. See [BaseScanOptions] for details.
+	//
+	// Return value:
+	//  The first return value is the `cursor` for the next iteration of results. `"0"` will be the `cursor`
+	//     returned on the last iteration of the sorted set.
+	//  The second return value is always an array of the subset of the sorted set held in `key`.
+	//  The array is a flattened series of `string` pairs, where the value is at even indices and the score is at odd indices.
+	//  If `ZScanOptionsBuilder#noScores` is to `true`, the second return value will only contain the members without scores.
+	//
+	// Example:
+	//   resCursor, resCol, err := client.ZScanWithOptions("key", "0", options.NewBaseScanOptionsBuilder().SetMatch("*"))
+	//   for resCursor != "0" {
+	//     resCursor, resCol, err = client.ZScanWithOptions("key", "0", options.NewBaseScanOptionsBuilder().SetMatch("*"))
+	//     fmt.Println("Cursor: ", resCursor.Value())
+	//     fmt.Println("Members: ", resCol.Value())
+	//   }
+	//
+	// [valkey.io]: https://valkey.io/commands/sscan/
+	ZScanWithOptions(key string, cursor string, options *options.ZScanOptions) (Result[string], []Result[string], error)
 }
