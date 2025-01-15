@@ -16,7 +16,6 @@ func NewZScanOptionsBuilder() *ZScanOptions {
 // If this value is set to true, the ZSCAN command will be called with NOSCORES option.
 // In the NOSCORES option, scores are not included in the response.
 func (zScanOptions *ZScanOptions) SetNoScores(noScores bool) *ZScanOptions {
-func (zScanOptions *ZScanOptions) SetNoScores(noScores bool) *ZScanOptions {
 	zScanOptions.noScores = noScores
 	return zScanOptions
 }

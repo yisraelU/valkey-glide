@@ -1643,8 +1643,8 @@ func (client *baseClient) XLen(key string) (int64, error) {
 //
 // Example:
 //
-//		 // assume "key" contains a set
-//		 resCursor, resCol, err := client.ZScan("key", "0")
+//	  // assume "key" contains a set
+//	  resCursor, resCol, err := client.ZScan("key", "0")
 //	  for resCursor != "0" {
 //		 	resCursor, resCol, err = client.ZScan("key", "0")
 //	  	fmt.Println("Cursor: ", resCursor.Value())
@@ -1668,7 +1668,7 @@ func (client *baseClient) ZScan(key string, cursor string) (Result[string], []Re
 //
 //	key - The key of the sorted set.
 //	cursor - The cursor that points to the next iteration of results.
-//	options - The options for the command. See [BaseScanOptions] for details.
+//	options - The options for the command. See [options.ZScanOptions] for details.
 //
 // Return value:
 //

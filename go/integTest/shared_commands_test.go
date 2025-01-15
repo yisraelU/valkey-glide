@@ -4850,7 +4850,7 @@ func (suite *GlideTestSuite) TestZScan() {
 		// Result contains the whole set
 		res, err := client.ZAdd(key1, charMap)
 		assert.NoError(suite.T(), err)
-		assert.Equal(suite.T(), int64(5), res.Value())
+		assert.Equal(suite.T(), int64(5), res)
 
 		resCursor, resCollection, err = client.ZScan(key1, initialCursor)
 		assert.NoError(suite.T(), err)
@@ -4881,7 +4881,7 @@ func (suite *GlideTestSuite) TestZScan() {
 		// Result contains a subset of the key
 		res, err = client.ZAdd(key1, numberMap)
 		assert.NoError(suite.T(), err)
-		assert.Equal(suite.T(), int64(50000), res.Value())
+		assert.Equal(suite.T(), int64(50000), res)
 
 		resCursor, resCollection, err = client.ZScan(key1, "0")
 		assert.NoError(suite.T(), err)
@@ -4947,7 +4947,7 @@ func (suite *GlideTestSuite) TestZScan() {
 		stringKey := uuid.New().String()
 		setRes, err := client.Set(stringKey, "test")
 		assert.NoError(suite.T(), err)
-		assert.Equal(suite.T(), "OK", setRes.Value())
+		assert.Equal(suite.T(), "OK", setRes)
 
 		_, _, err = client.ZScan(stringKey, initialCursor)
 		assert.NotNil(suite.T(), err)
