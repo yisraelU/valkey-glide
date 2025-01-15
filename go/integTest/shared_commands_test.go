@@ -3,7 +3,6 @@
 package integTest
 
 import (
-	"fmt"
 	"math"
 	"reflect"
 	"strconv"
@@ -1254,8 +1253,6 @@ func (suite *GlideTestSuite) TestHScan() {
 			resCursor, resCollection, _ = client.HScanWithOptions(key1, initialCursor, opts)
 			resCursorInt, _ = strconv.Atoi(resCursor.Value())
 			assert.True(t, resCursorInt >= 0)
-			fmt.Println("_____________________")
-			fmt.Println(resCollection)
 
 			// Check if all fields don't start with "num"
 			containsElementsWithNumKeyword := false
